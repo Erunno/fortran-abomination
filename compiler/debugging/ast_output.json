@@ -332,7 +332,7 @@
                     },
                     {
                       "name": "Type_Declaration_Stmt",
-                      "value": "integer :: i, j",
+                      "value": "integer :: i, j, k(size(current_grid, 1) + 1)",
                       "children": [
                         {
                           "name": "Intrinsic_Type_Spec",
@@ -346,7 +346,7 @@
                         },
                         {
                           "name": "Entity_Decl_List",
-                          "value": "i, j",
+                          "value": "i, j, k(size(current_grid, 1) + 1)",
                           "children": [
                             {
                               "name": "Entity_Decl",
@@ -365,6 +365,78 @@
                                 {
                                   "name": "Name",
                                   "value": "j"
+                                }
+                              ]
+                            },
+                            {
+                              "name": "Entity_Decl",
+                              "value": "k(size(current_grid, 1) + 1)",
+                              "children": [
+                                {
+                                  "name": "Name",
+                                  "value": "k"
+                                },
+                                {
+                                  "name": "Explicit_Shape_Spec_List",
+                                  "value": "size(current_grid, 1) + 1",
+                                  "children": [
+                                    {
+                                      "name": "Explicit_Shape_Spec",
+                                      "value": "size(current_grid, 1) + 1",
+                                      "children": [
+                                        {
+                                          "name": "Level_2_Expr",
+                                          "value": "size(current_grid, 1) + 1",
+                                          "children": [
+                                            {
+                                              "name": "Intrinsic_Function_Reference",
+                                              "value": "size(current_grid, 1)",
+                                              "children": [
+                                                {
+                                                  "name": "Intrinsic_Name",
+                                                  "value": "SIZE"
+                                                },
+                                                {
+                                                  "name": "Actual_Arg_Spec_List",
+                                                  "value": "current_grid, 1",
+                                                  "children": [
+                                                    {
+                                                      "name": "Name",
+                                                      "value": "current_grid"
+                                                    },
+                                                    {
+                                                      "name": "Int_Literal_Constant",
+                                                      "value": "1",
+                                                      "children": [
+                                                        {
+                                                          "name": "1",
+                                                          "value": "1"
+                                                        }
+                                                      ]
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "name": "+",
+                                              "value": "+"
+                                            },
+                                            {
+                                              "name": "Int_Literal_Constant",
+                                              "value": "1",
+                                              "children": [
+                                                {
+                                                  "name": "1",
+                                                  "value": "1"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -604,6 +676,76 @@
                                     {
                                       "name": "Name",
                                       "value": "i"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "name": "Assignment_Stmt",
+                              "value": "k(i) = k(i) + 1",
+                              "children": [
+                                {
+                                  "name": "Part_Ref",
+                                  "value": "k(i)",
+                                  "children": [
+                                    {
+                                      "name": "Name",
+                                      "value": "k"
+                                    },
+                                    {
+                                      "name": "Section_Subscript_List",
+                                      "value": "i",
+                                      "children": [
+                                        {
+                                          "name": "Name",
+                                          "value": "i"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "name": "=",
+                                  "value": "="
+                                },
+                                {
+                                  "name": "Level_2_Expr",
+                                  "value": "k(i) + 1",
+                                  "children": [
+                                    {
+                                      "name": "Part_Ref",
+                                      "value": "k(i)",
+                                      "children": [
+                                        {
+                                          "name": "Name",
+                                          "value": "k"
+                                        },
+                                        {
+                                          "name": "Section_Subscript_List",
+                                          "value": "i",
+                                          "children": [
+                                            {
+                                              "name": "Name",
+                                              "value": "i"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "name": "+",
+                                      "value": "+"
+                                    },
+                                    {
+                                      "name": "Int_Literal_Constant",
+                                      "value": "1",
+                                      "children": [
+                                        {
+                                          "name": "1",
+                                          "value": "1"
+                                        }
+                                      ]
                                     }
                                   ]
                                 }

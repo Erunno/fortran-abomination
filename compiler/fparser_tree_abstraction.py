@@ -21,6 +21,16 @@ class FparserTree:
         
         return [child for child in self.tree.children if child.__class__.__name__.lower() == node_type.lower()]
     
+    def get_nodes(self, predicate) -> list:
+        def add_if_node_satisfies_predicate(node, acc):
+            if predicate(node):
+                acc.append(node)
+            return acc
+        
+        nodes = self.reduce_nodes(add_if_node_satisfies_predicate, [])
+        
+        return nodes
+
     def reduce_nodes(self, reduction_function, accumulator_init_value) -> list:
         return self._reduce_impl(self.tree, reduction_function, accumulator_init_value)
 

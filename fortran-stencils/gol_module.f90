@@ -14,11 +14,12 @@ module gol_module
         integer, intent(in) :: current_grid(:,:)
         integer, intent(out) :: next_grid(:,:)
 
-        integer :: i, j
+        integer :: i, j, k(size(current_grid, 1) + 1)
 
         do i = 1, size(current_grid, 1)
             do j = 1, size(current_grid, 2)
                 next_grid(i,j) = current_grid(i,j) + i
+                k(i) = k(i) + 1
             end do
         end do
 
