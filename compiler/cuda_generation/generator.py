@@ -1,4 +1,4 @@
-from stencil_context import StencilContext
+from ..stencil_context import StencilContext
 
 class CudaGenerator:
     def __init__(self, context):

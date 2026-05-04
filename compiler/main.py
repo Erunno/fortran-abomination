@@ -1,19 +1,19 @@
 from fparser.two.parser import ParserFactory
 from fparser.common.readfortran import FortranFileReader
+from pathlib import Path
 
-reader = FortranFileReader("C:\\Users\\matya\\source\\repos\\fortran-tool-v2\\fortran-stencils\\gol_module.f90",
-                               ignore_comments=False)
+from compiler.kernels_finder import KernelFinder, SourceFilesCollection_FromFilesystem
 
-f2008_parser = ParserFactory().create(std="f2008")
-parse_tree = f2008_parser(reader)
+from .fparser_tree_abstraction import FparserTree
 
-# print(parse_tree.subclasses)
+def main() -> None:
+    source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "gol_module.f90"
 
-for subclass in parse_tree.subclasses:
-    # if parse_tree.subclasses[subclass] != []:
-    if "subroutine" in subclass.lower():
-        print(f"Subclass: {subclass}")
-        for item in parse_tree.subclasses[subclass]:
-            print(f"  Item: {item}")
+    file_collector = SourceFilesCollection_FromFilesystem().load_file(str(source_file))
+    kernel_finder = KernelFinder(file_collector)
 
-print (parse_tree.subclasses['Subroutine_Body'])
+    kernels = kernel_finder.load_all_kernels()
+    print(kernels)
+    
+if __name__ == "__main__":
+    main()
