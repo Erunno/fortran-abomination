@@ -82,6 +82,12 @@ class FparserTree:
 
         return FparserTree(all_children[0]).get_node_in_chain_of_types(node_idxs[1:])
 
+    def get_children_without(self, types_to_exclude: list[str]) -> list:
+        to_exclude = [t.lower() for t in types_to_exclude]
+        return [
+            child for child in self.children() 
+            if child.__class__.__name__.lower() not in to_exclude]
+
 class LoopStatement:
     def __init__(self, loop_ast):
         self.loop_ast = loop_ast
@@ -97,6 +103,6 @@ class LoopStatement:
 
         if not hasattr(self.loop_ast, "children"):
             return GroupOfNodes([])
-            
-        # remove the "do" definition and the "end do" statement
-        return GroupOfNodes(self.loop_ast.children[1:-1])
+
+        do_loop_control_types = ["Nonlabel_Do_Stmt", "End_Do_Stmt"]
+        return GroupOfNodes(FparserTree(self.loop_ast).get_children_without(do_loop_control_types))

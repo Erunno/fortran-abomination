@@ -74,7 +74,7 @@ class Context:
 
         intrinsic_type = tree.get_all_nodes_of_type("Intrinsic_Type_Spec")
         variable_list = tree.get_all_nodes_of_type("Entity_Decl")
-        attributes = [str(attr) for attr in tree.get_all_nodes_of_type("Attr_Spec")]
+        attributes = [str(attr).lower() for attr in tree.get_all_nodes_of_type("Attr_Spec_List")]
 
         variables = []
         for var in variable_list:

@@ -16,11 +16,23 @@ module gol_module
 
         integer :: i, j, k(size(current_grid, 1) + 1)
 
+        current_grid(1,1) = 42
+        current_grid(1,2) = 42
+        current_grid(1,5) = 42
+
         do i = 1, size(current_grid, 1)
+            next_grid(i,5) = current_grid(i,5) + i
+            
             do j = 1, size(current_grid, 2)
                 next_grid(i,j) = current_grid(i,j) + i
                 k(i) = k(i) + 1
             end do
+
+            k(i) = k(i) + 5
+        end do
+
+        do i = 1, size(current_grid, 1)
+            next_grid(i,42) = current_grid(i,5) + i
         end do
 
     end subroutine gol_kernel
