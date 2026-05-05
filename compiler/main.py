@@ -13,14 +13,18 @@ def main() -> None:
     file_collector = SourceFilesCollection_FromFilesystem().load_file(str(source_file))
     kernel_finder = KernelFinder(file_collector)
 
-    kernels = kernel_finder.load_all_kernels()
-    gol: KernelFunctionDefinition = kernels["gol_kernel"]
+    kernel_functions = kernel_finder.load_all_kernels()
+    gol: KernelFunctionDefinition = kernel_functions["gol_kernel"]
 
     for var in gol.local_context.variables:
         print(str(var))
 
     print (gol.name())
-    print(kernels)
+
+    kernels = gol.extract_kernels_graph()
+
+    for kernel in kernels:
+        print(str(kernel))
     
 if __name__ == "__main__":
     main()

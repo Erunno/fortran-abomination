@@ -1,4 +1,4 @@
-from compiler.fparser_tree_abstraction import FparserTree
+from compiler.fparser_tree_abstraction import FparserTree, LoopStatement
 from compiler.typing import ArrayType, TerminalType
 
 class Variable:
@@ -13,7 +13,13 @@ class Variable:
     def is_output(self):
         return "intent(out)" in self.attributes
     
-    def __string__(self):
+    def is_input_output(self):
+        return "intent(inout)" in self.attributes
+    
+    def name(self):
+        return self.name
+
+    def __str__(self):
         return f"Variable(name={self.name}, type={self.type}, attributes={self.attributes})"
     
     @staticmethod
@@ -36,6 +42,20 @@ class Variable:
 
 
         return Variable(variable_name, final_type, attributes)
+
+class IterationVariable:
+    def __init__(self, original_variable: Variable, loop_statement: LoopStatement):
+        self.original_variable = original_variable
+        self.loop_statement = loop_statement
+
+    def name(self):
+        return self.original_variable.name
+
+    def is_named(self, name):
+        return self.name() == name
+    
+    def __str__(self):
+        return f"IterationVariable(name={self.name()}, original_variable={self.original_variable})"
 
 class Context:
     def _load_specifications(self, ast):
@@ -61,6 +81,9 @@ class Context:
             variables.append(Variable.from_(intrinsic_type, var, attributes))
 
         return variables
+    
+    def get_variable_by_name(self, name) -> Variable:
+        raise NotImplementedError("This method should be implemented by subclasses of Context")
 
 class LocalContext(Context):
     def __init__(self, specifications_ast):
@@ -74,3 +97,29 @@ class LocalContext(Context):
                 return variable
         
         raise Exception(f"Variable with name {name} not found in context")
+    
+
+    def __str__(self):
+        variables_str = "\n".join([str(var) for var in self.variables])
+        tabbed_variables_str = "\t" + variables_str.replace("\n", "\n\t")
+        return f"LocalContext(variables=\n{tabbed_variables_str}\n)"
+
+class DoLoopContext(Context):
+    def __init__(self, do_statement: LoopStatement, parent_context: Context):
+        self.parent_context = parent_context
+
+        iter_var_name = do_statement.iteration_variable_name()
+        self.iteration_variable = IterationVariable(
+            self.parent_context.get_variable_by_name(iter_var_name),
+            do_statement)
+
+    def get_variable_by_name(self, name) -> Variable | IterationVariable:
+        if self.iteration_variable.is_named(name):
+            return self.iteration_variable
+        
+        return self.parent_context.get_variable_by_name(name)
+
+    def __str__(self):
+        parent_context_str = str(self.parent_context)
+        tabbed_parent_context_str = "\t" + parent_context_str.replace("\n", "\n\t")
+        return f"DoLoopContext(iteration_variable={self.iteration_variable}, parent_context=\n{tabbed_parent_context_str}\n)"
