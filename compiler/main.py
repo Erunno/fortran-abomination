@@ -2,6 +2,7 @@ from fparser.two.parser import ParserFactory
 from fparser.common.readfortran import FortranFileReader
 from pathlib import Path
 
+from compiler.expression_walking.used_var import UsedVarsFinder
 from compiler.kernel_abstraction import KernelFunctionDefinition
 from compiler.kernels_finder import KernelFinder, SourceFilesCollection_FromFilesystem
 
@@ -25,6 +26,16 @@ def main() -> None:
 
     for kernel in kernels:
         print(str(kernel))
-    
+
+    print ("done parsing and extracting kernels\n\n")
+
+    used_vars_finder = UsedVarsFinder()
+    used_vars = used_vars_finder.find_all_used_vars(kernels[0])
+
+    print("Used variables in the first kernel:")
+    for var in used_vars:
+        print(str(var))
+
+
 if __name__ == "__main__":
     main()

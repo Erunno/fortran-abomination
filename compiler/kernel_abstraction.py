@@ -4,15 +4,15 @@ from compiler.debugging.color_printer import Colors as c
 
 class Kernel:
     def __init__(self, context: Context):
-        self.code_lines = []
+        self._code_lines = []
         self.context = context
         self.sub_kernel = None
 
     def append_code_line(self, line_ast):
-        self.code_lines.append(line_ast)
+        self._code_lines.append(line_ast)
 
     def is_empty(self):
-        return len(self.code_lines) == 0 and self.sub_kernel is None
+        return len(self._code_lines) == 0 and self.sub_kernel is None
     
     def has_top_level_context(self):
         return self.context.is_call_context()
@@ -23,9 +23,16 @@ class Kernel:
         
         self.sub_kernel = other_kernel
 
+    def enum_lines_with_context(self):
+        for line in self._code_lines:
+            yield line, self.context
+
+        if self.sub_kernel is not None:
+            yield from self.sub_kernel.enum_lines_with_context()
+
     def __str__(self):
         # We wrap the underlying code lines in the CODE color
-        code_str = "\n".join([f"{c.CODE}{str(line)}{c.END}" for line in self.code_lines])
+        code_str = "\n".join([f"{c.CODE}{str(line)}{c.END}" for line in self._code_lines])
         tabbed_code_str = "\t" + code_str.replace("\n", "\n\t")
 
         context_str = str(self.context)

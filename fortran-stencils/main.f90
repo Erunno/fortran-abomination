@@ -7,7 +7,7 @@ program array_slice
 
     current(:,:) = 0
 
-    call gol_kernel(current, next)
+    call test_cuda_kernel(current, next)
 
     print *, next
 
