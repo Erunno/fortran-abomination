@@ -25,6 +25,14 @@ class FparserTree:
         
         return [child for child in self.tree.children if child.__class__.__name__.lower() == node_type.lower()]
     
+    def get_first_child_of_type(self, node_type: str):
+        all_nodes = self.get_all_nodes_in_children_of_type(node_type)
+
+        if len(all_nodes) == 0:
+            return None
+
+        return all_nodes[0]
+
     def get_nodes(self, predicate) -> list:
         def add_if_node_satisfies_predicate(node, acc):
             if predicate(node):
@@ -113,6 +121,9 @@ class LoopStatement:
 
         do_loop_control_types = ["Nonlabel_Do_Stmt", "End_Do_Stmt"]
         return GroupOfNodes(FparserTree(self.loop_ast).get_children_without(do_loop_control_types))
+    
+    def get_loop_control_part(self):
+        return FparserTree(self.loop_ast).get_all_nodes_of_type("Loop_Control")[0]
 
 
 class CallStmtNode:

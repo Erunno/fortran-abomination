@@ -2,7 +2,7 @@ from fparser.two.parser import ParserFactory
 from fparser.common.readfortran import FortranFileReader
 from pathlib import Path
 
-from compiler.expression_walking.used_var import UsedVarsFinder
+from compiler.expression_walking.used_var import UsedSizesFinder, UsedVarsFinder
 from compiler.kernel_abstraction import KernelFunctionDefinition
 from compiler.kernels_finder import KernelFinder, SourceFilesCollection_FromFilesystem
 
@@ -35,6 +35,12 @@ def main() -> None:
     print("Used variables in the first kernel:")
     for var in used_vars:
         print(str(var))
+
+    used_sizes_finder = UsedSizesFinder()
+    used_sizes = used_sizes_finder.find_all_used_sizes(kernels[0])
+    print("\nUsed sizes in the first kernel:")
+    for var, arg_num in used_sizes:
+        print(f"{var} (dimension index {arg_num})")
 
 
 if __name__ == "__main__":

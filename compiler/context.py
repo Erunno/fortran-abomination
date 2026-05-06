@@ -86,6 +86,9 @@ class Context:
     def get_variable_by_name(self, name) -> Variable:
         raise NotImplementedError("This method should be implemented by subclasses of Context")
 
+    def enum_do_loop_contexts(self):
+        raise NotImplementedError("This method should be implemented by subclasses of Context")
+
     def is_call_context(self):
         return False
     
@@ -111,10 +114,14 @@ class LocalContext(Context):
         arg_list = self.declaration_ast.get_all_nodes_of_type("Dummy_Arg_List")
         arg_list = FparserTree(arg_list[0]).children()
         return [str(arg) for arg in arg_list]
+    
+    def enum_do_loop_contexts(self):
+        return [] 
 
 class DoLoopContext(Context):
     def __init__(self, do_statement: LoopStatement, parent_context: Context):
         self.parent_context = parent_context
+        self.loop_statement = do_statement
 
         iter_var_name = do_statement.iteration_variable_name()
         self.iteration_variable = IterationVariable(
@@ -127,11 +134,23 @@ class DoLoopContext(Context):
         
         return self.parent_context.get_variable_by_name(name)
 
+    def enum_do_loop_contexts(self):
+        yield self
+        yield from self.parent_context.enum_do_loop_contexts()
+
+    def enum_range_code(self):
+        loop_control_part = self.loop_statement.get_loop_control_part()
+        range_from_to = loop_control_part.children[1]
+        range_from = range_from_to[0]
+        range_to = range_from_to[1]
+        
+        yield range_from, self
+        yield range_to, self
+
     def __str__(self):
         parent_context_str = str(self.parent_context)
         tabbed_parent_context_str = "\t" + parent_context_str.replace("\n", "\n\t")
         return f"{c.CLASS}DoLoopContext{c.END}({c.FIELD}iteration_variable{c.END}={self.iteration_variable}, {c.FIELD}parent_context{c.END}=\n{tabbed_parent_context_str}\n)"
-
 
 class ContextWithArguments(Context):
     def __init__(self,
@@ -155,6 +174,9 @@ class ContextWithArguments(Context):
     
     def is_call_context(self):
         return True
+    
+    def enum_do_loop_contexts(self):
+        yield from self.caller_context.enum_do_loop_contexts()
 
     def __str__(self):
         function_local_context_str = str(self.function_local_context)

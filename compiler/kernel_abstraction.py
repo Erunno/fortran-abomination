@@ -30,15 +30,21 @@ class Kernel:
         if self.sub_kernel is not None:
             yield from self.sub_kernel.enum_lines_with_context()
 
+    def enum_do_stmt_ranges_with_context(self):
+        for do_loop_context in self.context.enum_do_loop_contexts():
+            for range_code in do_loop_context.enum_range_code():
+                yield range_code, do_loop_context
+
+        if self.sub_kernel is not None:
+            yield from self.sub_kernel.enum_do_stmt_ranges_with_context()
+
     def __str__(self):
-        # We wrap the underlying code lines in the CODE color
         code_str = "\n".join([f"{c.CODE}{str(line)}{c.END}" for line in self._code_lines])
         tabbed_code_str = "\t" + code_str.replace("\n", "\n\t")
 
         context_str = str(self.context)
         tabbed_context_str = "\t" + context_str.replace("\n", "\n\t")
 
-        # Handle formatting if the sub-kernel is None
         sub_kernel_str = str(self.sub_kernel) if self.sub_kernel is not None else f"{c.NONE}None{c.END}"
         sub_kernel_tabbed = "\t" + sub_kernel_str.replace("\n", "\n\t")
 
