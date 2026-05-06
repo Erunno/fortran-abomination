@@ -67,7 +67,12 @@ class KernelFinder:
         kernel_functions = [x for x in subroutines if is_kernel_subroutine(x)]
         kernel_functions = [KernelFunctionDefinition(kernel_node) for kernel_node in kernel_functions]
 
-        return {kernel_function.name(): kernel_function for kernel_function in kernel_functions}
+        symbol_table = {kernel_function.name(): kernel_function for kernel_function in kernel_functions}
+        
+        for kernel_function in kernel_functions:
+            kernel_function.set_symbol_table(symbol_table)
+
+        return symbol_table
 
     def get_entry_kernels(self) -> list[KernelFunctionDefinition]:
         pass

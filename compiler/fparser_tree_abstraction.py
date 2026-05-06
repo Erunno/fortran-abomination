@@ -1,3 +1,7 @@
+from decimal import Context
+from tkinter import Variable
+
+
 class FparserTree:
     def __init__(self, tree):
         if tree.__class__ == FparserTree:
@@ -62,6 +66,9 @@ class FparserTree:
     def is_comment(self) -> bool:
         return self.tree.__class__.__name__.lower() == "Comment".lower()
 
+    def is_call_statement(self) -> bool:
+        return self.tree.__class__.__name__.lower() == "Call_Stmt".lower()
+
     def get_node_in_chain_of_types(self, node_idxs: list[int | str]):
         if len(node_idxs) == 0:
             return self.tree
@@ -106,3 +113,18 @@ class LoopStatement:
 
         do_loop_control_types = ["Nonlabel_Do_Stmt", "End_Do_Stmt"]
         return GroupOfNodes(FparserTree(self.loop_ast).get_children_without(do_loop_control_types))
+
+
+class CallStmtNode:
+    def __init__(self, call_stmt_ast):
+        self.call_stmt = FparserTree(call_stmt_ast)
+
+    def called_function_name(self) -> str:
+        return str(self.call_stmt.get_all_nodes_in_children_of_type("Name")[0])
+
+    def get_arg_list(self, context: Context) -> list[Variable]:
+        args_list = self.call_stmt.get_all_nodes_in_children_of_type("Actual_Arg_Spec_List")[0]
+        args_list = FparserTree(args_list).children()
+        args_list = [str(arg) for arg in args_list]
+
+        return [context.get_variable_by_name(arg) for arg in args_list]

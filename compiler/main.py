@@ -14,7 +14,7 @@ def main() -> None:
     kernel_finder = KernelFinder(file_collector)
 
     kernel_functions = kernel_finder.load_all_kernels()
-    gol: KernelFunctionDefinition = kernel_functions["gol_kernel"]
+    gol: KernelFunctionDefinition = kernel_functions["second_gol_kernel"]
 
     for var in gol.local_context.variables:
         print(str(var))

@@ -85,11 +85,14 @@ class Context:
     def get_variable_by_name(self, name) -> Variable:
         raise NotImplementedError("This method should be implemented by subclasses of Context")
 
+    def is_call_context(self):
+        return False
+    
 class LocalContext(Context):
-    def __init__(self, specifications_ast):
+    def __init__(self, specifications_ast, declaration_ast):
         self.specifications_ast = FparserTree(specifications_ast)
+        self.declaration_ast = FparserTree(declaration_ast)
         self.variables = self._load_specifications(self.specifications_ast)
-
 
     def get_variable_by_name(self, name) -> Variable:
         for variable in self.variables:
@@ -97,12 +100,16 @@ class LocalContext(Context):
                 return variable
         
         raise Exception(f"Variable with name {name} not found in context")
-    
 
     def __str__(self):
         variables_str = "\n".join([str(var) for var in self.variables])
         tabbed_variables_str = "\t" + variables_str.replace("\n", "\n\t")
         return f"LocalContext(variables=\n{tabbed_variables_str}\n)"
+    
+    def get_call_arg_names(self):
+        arg_list = self.declaration_ast.get_all_nodes_of_type("Dummy_Arg_List")
+        arg_list = FparserTree(arg_list[0]).children()
+        return [str(arg) for arg in arg_list]
 
 class DoLoopContext(Context):
     def __init__(self, do_statement: LoopStatement, parent_context: Context):
@@ -123,3 +130,32 @@ class DoLoopContext(Context):
         parent_context_str = str(self.parent_context)
         tabbed_parent_context_str = "\t" + parent_context_str.replace("\n", "\n\t")
         return f"DoLoopContext(iteration_variable={self.iteration_variable}, parent_context=\n{tabbed_parent_context_str}\n)"
+
+
+class ContextWithArguments(Context):
+    def __init__(self, parent_context: LocalContext, call_arguments: list[Variable]):
+        self.parent_context = parent_context
+        self.call_arguments = call_arguments
+
+        function_arg_list = parent_context.get_call_arg_names()
+        if len(function_arg_list) != len(call_arguments):
+            raise Exception(f"Number of call arguments ({len(call_arguments)}) does not match number of function arguments ({len(function_arg_list)})")
+        
+        self.translation_dict = {arg_name: arg for arg_name, arg in zip(function_arg_list, call_arguments)}
+
+    def get_variable_by_name(self, name) -> Variable:
+        if name in self.translation_dict:
+            return self.translation_dict[name]
+        return self.parent_context.get_variable_by_name(name)
+    
+    def is_call_context(self):
+        return True
+
+    def __str__(self):
+        parent_context_str = str(self.parent_context)
+        tabbed_parent_context_str = "\t" + parent_context_str.replace("\n", "\n\t")
+
+        arguments_str = "\n".join([str(arg) for arg in self.call_arguments])
+        tabbed_arguments_str = "\t" + arguments_str.replace("\n", "\n\t")
+
+        return f"ContextWithArguments(call_arguments=\n{tabbed_arguments_str}, parent_context=\n{tabbed_parent_context_str}\n)"

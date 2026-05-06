@@ -48,10 +48,28 @@ module gol_module
 
         do i = 1, size(current_grid, 1)
             do j = 1, size(current_grid, 2)
-                next_grid(i,j) = current_grid(i,j) + j
+                call third_gol_kernel(current_grid, next_grid, i, j)
             end do
         end do
 
     end subroutine second_gol_kernel
+
+    ! kernel
+    subroutine third_gol_kernel(in_arr, out_arr, ii, jj)
+        implicit none
+
+        integer, intent(in) :: in_arr(:,:)
+        integer, intent(out) :: out_arr(:,:)
+        integer, intent(in) :: ii, jj
+
+        integer :: i
+
+        out_arr(ii,jj) = in_arr(ii,jj) + ii + jj
+
+        do i = 1, size(in_arr, 1)
+            out_arr(ii,jj) = out_arr(ii,jj) + in_arr(i,jj)
+        end do
+
+    end subroutine third_gol_kernel
 
 end module gol_module
