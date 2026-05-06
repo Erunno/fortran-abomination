@@ -55,8 +55,8 @@ class KernelFunctionDefinition:
     def extract_kernels_graph(self) -> list[Kernel]:
         return self._extract_kernels_sub_graph(self.code_ast.tree, self.local_context)
     
-    def extract_kernels_graph_with_calls(self, call_args: list[Variable]) -> list[Kernel]:
-        context_with_args = ContextWithArguments(self.local_context, call_args)
+    def extract_kernels_graph_with_calls(self, caller_context: Context, call_args: list[Variable]) -> list[Kernel]:
+        context_with_args = ContextWithArguments(self.local_context, caller_context, call_args)
         return self._extract_kernels_sub_graph(self.code_ast.tree, context_with_args)
         
     def _extract_kernels_sub_graph(self, code_ast, current_context) -> list[Kernel]:
@@ -99,7 +99,7 @@ class KernelFunctionDefinition:
                 arg_list = call.get_arg_list(current_context)
 
                 called_kernel = self.symbol_table[kernel_func_name]
-                sub_kernels = called_kernel.extract_kernels_graph_with_calls(arg_list)
+                sub_kernels = called_kernel.extract_kernels_graph_with_calls(current_context, arg_list)
                 
                 if len(sub_kernels) > 0 and sub_kernels[0].has_top_level_context():
                     current_kernels.current_sub_kernel.merge_with(sub_kernels[0])

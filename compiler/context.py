@@ -133,11 +133,15 @@ class DoLoopContext(Context):
 
 
 class ContextWithArguments(Context):
-    def __init__(self, parent_context: LocalContext, call_arguments: list[Variable]):
-        self.parent_context = parent_context
+    def __init__(self,
+                 function_local_context: LocalContext,
+                 caller_context: Context,
+                 call_arguments: list[Variable]):
+        self.function_local_context = function_local_context
         self.call_arguments = call_arguments
+        self.caller_context = caller_context
 
-        function_arg_list = parent_context.get_call_arg_names()
+        function_arg_list = function_local_context.get_call_arg_names()
         if len(function_arg_list) != len(call_arguments):
             raise Exception(f"Number of call arguments ({len(call_arguments)}) does not match number of function arguments ({len(function_arg_list)})")
         
@@ -146,16 +150,19 @@ class ContextWithArguments(Context):
     def get_variable_by_name(self, name) -> Variable:
         if name in self.translation_dict:
             return self.translation_dict[name]
-        return self.parent_context.get_variable_by_name(name)
+        return self.function_local_context.get_variable_by_name(name)
     
     def is_call_context(self):
         return True
 
     def __str__(self):
-        parent_context_str = str(self.parent_context)
-        tabbed_parent_context_str = "\t" + parent_context_str.replace("\n", "\n\t")
+        function_local_context_str = str(self.function_local_context)
+        tabbed_function_local_context_str = "\t" + function_local_context_str.replace("\n", "\n\t")
+
+        caller_context_str = str(self.caller_context)
+        tabbed_caller_context_str = "\t" + caller_context_str.replace("\n", "\n\t")
 
         arguments_str = "\n".join([str(arg) for arg in self.call_arguments])
         tabbed_arguments_str = "\t" + arguments_str.replace("\n", "\n\t")
 
-        return f"ContextWithArguments(call_arguments=\n{tabbed_arguments_str}, parent_context=\n{tabbed_parent_context_str}\n)"
+        return f"ContextWithArguments(call_arguments=\n{tabbed_arguments_str}, \n\tfunction_local_context={tabbed_function_local_context_str}, \ncaller_context=\n{tabbed_caller_context_str}\n)"
