@@ -1,5 +1,6 @@
 from compiler.context import Context, ContextWithArguments, DoLoopContext, LocalContext, Variable
 from compiler.fparser_tree_abstraction import CallStmtNode, FparserTree, LoopStatement
+from compiler.debugging.color_printer import Colors as c
 
 class Kernel:
     def __init__(self, context: Context):
@@ -23,16 +24,19 @@ class Kernel:
         self.sub_kernel = other_kernel
 
     def __str__(self):
-        code_str = "\n".join([str(line) for line in self.code_lines])
+        # We wrap the underlying code lines in the CODE color
+        code_str = "\n".join([f"{c.CODE}{str(line)}{c.END}" for line in self.code_lines])
         tabbed_code_str = "\t" + code_str.replace("\n", "\n\t")
 
         context_str = str(self.context)
         tabbed_context_str = "\t" + context_str.replace("\n", "\n\t")
 
-        sub_kernel_str = str(self.sub_kernel) if self.sub_kernel is not None else "None"
+        # Handle formatting if the sub-kernel is None
+        sub_kernel_str = str(self.sub_kernel) if self.sub_kernel is not None else f"{c.NONE}None{c.END}"
         sub_kernel_tabbed = "\t" + sub_kernel_str.replace("\n", "\n\t")
 
-        return f"Kernel(\n  context=\n{tabbed_context_str},\n  code_lines=\n{tabbed_code_str}\n  sub_kernel=\n{sub_kernel_tabbed}\n)"
+        return f"{c.CLASS}Kernel{c.END}(\n  {c.FIELD}context{c.END}=\n{tabbed_context_str},\n  {c.FIELD}code_lines{c.END}=\n{tabbed_code_str}\n  {c.FIELD}sub_kernel{c.END}=\n{sub_kernel_tabbed}\n)"
+
 
 class KernelFunctionDefinition:
     def __init__(self, kernel_ast):

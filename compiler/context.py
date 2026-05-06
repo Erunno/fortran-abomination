@@ -1,3 +1,4 @@
+from compiler.debugging.color_printer import Colors as c
 from compiler.fparser_tree_abstraction import FparserTree, LoopStatement
 from compiler.typing import ArrayType, TerminalType
 
@@ -20,7 +21,7 @@ class Variable:
         return self.name
 
     def __str__(self):
-        return f"Variable(name={self.name}, type={self.type}, attributes={self.attributes})"
+        return f"{c.CLASS}Variable{c.END}({c.FIELD}name{c.END}={c.VAR}{self.name}{c.END}, {c.FIELD}type{c.END}={self.type}, {c.FIELD}attributes{c.END}={c.ATTR}{self.attributes}{c.END})"
     
     @staticmethod
     def from_(intrinsic_type_ast, variable_ast, attributes):
@@ -55,7 +56,7 @@ class IterationVariable:
         return self.name() == name
     
     def __str__(self):
-        return f"IterationVariable(name={self.name()}, original_variable={self.original_variable})"
+        return f"{c.CLASS}IterationVariable{c.END}({c.FIELD}name{c.END}={c.VAR}{self.name()}{c.END}, {c.FIELD}original_variable{c.END}={self.original_variable})"
 
 class Context:
     def _load_specifications(self, ast):
@@ -104,7 +105,7 @@ class LocalContext(Context):
     def __str__(self):
         variables_str = "\n".join([str(var) for var in self.variables])
         tabbed_variables_str = "\t" + variables_str.replace("\n", "\n\t")
-        return f"LocalContext(variables=\n{tabbed_variables_str}\n)"
+        return f"{c.CLASS}LocalContext{c.END}({c.FIELD}variables{c.END}=\n{tabbed_variables_str}\n)"
     
     def get_call_arg_names(self):
         arg_list = self.declaration_ast.get_all_nodes_of_type("Dummy_Arg_List")
@@ -129,7 +130,7 @@ class DoLoopContext(Context):
     def __str__(self):
         parent_context_str = str(self.parent_context)
         tabbed_parent_context_str = "\t" + parent_context_str.replace("\n", "\n\t")
-        return f"DoLoopContext(iteration_variable={self.iteration_variable}, parent_context=\n{tabbed_parent_context_str}\n)"
+        return f"{c.CLASS}DoLoopContext{c.END}({c.FIELD}iteration_variable{c.END}={self.iteration_variable}, {c.FIELD}parent_context{c.END}=\n{tabbed_parent_context_str}\n)"
 
 
 class ContextWithArguments(Context):
@@ -165,4 +166,5 @@ class ContextWithArguments(Context):
         arguments_str = "\n".join([str(arg) for arg in self.call_arguments])
         tabbed_arguments_str = "\t" + arguments_str.replace("\n", "\n\t")
 
-        return f"ContextWithArguments(call_arguments=\n{tabbed_arguments_str}, \n\tfunction_local_context={tabbed_function_local_context_str}, \ncaller_context=\n{tabbed_caller_context_str}\n)"
+        return f"{c.CLASS}ContextWithArguments{c.END}({c.FIELD}call_arguments{c.END}=\n{tabbed_arguments_str}, \n\t{c.FIELD}function_local_context{c.END}={tabbed_function_local_context_str}, \n{c.FIELD}caller_context{c.END}=\n{tabbed_caller_context_str}\n)"
+    
