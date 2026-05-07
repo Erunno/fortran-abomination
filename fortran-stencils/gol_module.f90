@@ -80,9 +80,15 @@ module gol_module
 
         do i = 1, size(current_grid, 1)
             do j = 1, size(current_grid, 2)
-                ! next_grid(i,j) = current_grid(i,j) + i + j
+                next_grid(i,j) = current_grid(i,j) + i + j + 1 + 1.2
                 call third_gol_kernel(next_grid, next_grid, i, j)
             end do
+
+            next_grid(i,42) = current_grid(i,5) + i
+        end do
+
+        do i = 1, size(current_grid, 1)
+            next_grid(i,42) = current_grid(i,5) + i
         end do
 
     end subroutine second_gol_kernel
@@ -97,11 +103,11 @@ module gol_module
 
         integer :: i
 
-        out_arr(ii,jj) = in_arr(ii,jj) + ii + jj
+        ! out_arr(ii,jj) = in_arr(ii,jj) + ii + jj
 
-        ! do i = 1, size(in_arr, 1)
-        !     out_arr(ii,jj) = out_arr(ii,jj) + in_arr(i,jj)
-        ! end do
+        do i = 1, size(in_arr, 1)
+            out_arr(ii,jj) = out_arr(ii,jj) + in_arr(i,jj)
+        end do
 
     end subroutine third_gol_kernel
 

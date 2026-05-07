@@ -65,14 +65,19 @@ class AstVisitor:
 
         return decorator
 
-    def _visit_all_code_lines_of(self, kernel: Kernel):
-        return [visit_result 
-                for line, context in kernel.enum_lines_with_context()
-                for visit_result in self._visit(line, context)
-               ]
+    
+    def _visit_all_code_lines_of(self, kernel: Kernel, post_process=lambda x: x):
+        if post_process == 'flatten':
+            post_process = lambda x: [item for sublist in x for item in sublist]
 
-    def _visit_all_do_stmt_ranges_of(self, kernel: Kernel):
-        return [visit_result 
+        return post_process([self._visit(line, context)
+                for line, context in kernel.enum_lines_with_context()
+               ])
+
+    def _visit_all_do_stmt_ranges_of(self, kernel: Kernel, post_process=lambda x: x):
+        if post_process == 'flatten':
+            post_process = lambda x: [item for sublist in x for item in sublist]
+
+        return post_process([self._visit(range, context)
                 for range, context in kernel.enum_do_stmt_ranges_with_context()
-                for visit_result in self._visit(range, context)
-               ]
+               ])

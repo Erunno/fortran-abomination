@@ -2,6 +2,8 @@ from fparser.two.parser import ParserFactory
 from fparser.common.readfortran import FortranFileReader
 from pathlib import Path
 
+from compiler.cuda_generation.kernel_depence import DependenceResolver
+from compiler.expression_walking.cpp_code_line_gen import CppCodeGenerator
 from compiler.expression_walking.used_var import UsedSizesFinder, UsedVarsFinder
 from compiler.kernel_abstraction import KernelFunctionDefinition
 from compiler.kernels_finder import KernelFinder, SourceFilesCollection_FromFilesystem
@@ -27,6 +29,10 @@ def main() -> None:
     for kernel in kernels:
         print(str(kernel))
 
+        print (f"\n===== Do Loop Contexts in this kernel ({len(list(kernel.get_all_do_loop_contexts_from_outer_to_inner()))}) =====\n")
+        print(*[str(do_loop_context) for do_loop_context in kernel.get_all_do_loop_contexts_from_outer_to_inner()], sep="\n")
+        print("\n===== End Do Loop Contexts =====\n\n\n")
+
     print ("done parsing and extracting kernels\n\n")
 
     used_vars_finder = UsedVarsFinder()
@@ -41,6 +47,25 @@ def main() -> None:
     print("\nUsed sizes in the first kernel:")
     for var, arg_num in used_sizes:
         print(f"{var} (dimension index {arg_num})")
+
+    print ("\nGrouping kernels by shared loop contexts...\n")
+    
+    dependence_resolver = DependenceResolver()
+    kernel_groups = dependence_resolver.group_kernels(kernels)
+    print(f"\nKernel groups (total {len(kernel_groups)} groups):")
+    for i, group in enumerate(kernel_groups):
+        print(f"\nGroup {i+1} (total {len(group.kernels)} kernels):")
+        print(f"Shared outer loop contexts for this group:")
+        for context in group.get_shared_outer_loop_contexts():
+            print(str(context))
+        
+        for kernel in group.kernels:
+            print(str(kernel))
+
+    gen = CppCodeGenerator()
+    generates_lines = gen.generate_cpp_code(kernels[0])
+    print("\nGenerated C++ code for the first kernel:")
+    print(generates_lines)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,9 @@ class Colors:
     NONE = "\033[91m"    # Red
     END = "\033[0m"      # Reset
 
+    WARN = "\033[93m"    # Yellow
+    ERR = "\033[91m"     # Red
+    
     @staticmethod
     def set_colors():
         Colors.CLASS = "\033[94m"

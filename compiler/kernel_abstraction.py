@@ -1,3 +1,5 @@
+from typing import Generator
+
 from compiler.context import Context, ContextWithArguments, DoLoopContext, LocalContext, Variable
 from compiler.fparser_tree_abstraction import CallStmtNode, FparserTree, LoopStatement
 from compiler.debugging.color_printer import Colors as c
@@ -30,13 +32,11 @@ class Kernel:
         if self.sub_kernel is not None:
             yield from self.sub_kernel.enum_lines_with_context()
 
-    def enum_do_stmt_ranges_with_context(self):
+    def enum_do_stmt_ranges_with_context(self) -> Generator[(any, DoLoopContext)]:
         for do_loop_context in self.context.enum_do_loop_contexts():
             for range_code in do_loop_context.enum_range_code():
                 yield range_code, do_loop_context
 
-        if self.sub_kernel is not None:
-            yield from self.sub_kernel.enum_do_stmt_ranges_with_context()
 
     def __str__(self):
         code_str = "\n".join([f"{c.CODE}{str(line)}{c.END}" for line in self._code_lines])
@@ -50,6 +50,10 @@ class Kernel:
 
         return f"{c.CLASS}Kernel{c.END}(\n  {c.FIELD}context{c.END}=\n{tabbed_context_str},\n  {c.FIELD}code_lines{c.END}=\n{tabbed_code_str}\n  {c.FIELD}sub_kernel{c.END}=\n{sub_kernel_tabbed}\n)"
 
+    def get_all_do_loop_contexts_from_outer_to_inner(self) -> list[DoLoopContext]:
+        contexts = list(self.context.enum_do_loop_contexts())
+        contexts.reverse()
+        return list(contexts)
 
 class KernelFunctionDefinition:
     def __init__(self, kernel_ast):

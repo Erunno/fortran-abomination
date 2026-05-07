@@ -4,8 +4,8 @@ from compiler.typing import ArrayType, TerminalType
 
 class Variable:
     def __init__(self, name, type, attributes=[]):
-        self.name = name
-        self.type = type
+        self._name = name
+        self._type = type
         self.attributes = attributes
 
     def is_input(self):
@@ -14,14 +14,17 @@ class Variable:
     def is_output(self):
         return "intent(out)" in self.attributes
     
+    def type(self) -> TerminalType | ArrayType:
+        return self._type
+
     def is_input_output(self):
         return "intent(inout)" in self.attributes
     
     def name(self):
-        return self.name
+        return self._name
 
     def __str__(self):
-        return f"{c.CLASS}Variable{c.END}({c.FIELD}name{c.END}={c.VAR}{self.name}{c.END}, {c.FIELD}type{c.END}={self.type}, {c.FIELD}attributes{c.END}={c.ATTR}{self.attributes}{c.END})"
+        return f"{c.CLASS}Variable{c.END}({c.FIELD}name{c.END}={c.VAR}{self.name()}{c.END}, {c.FIELD}type{c.END}={self.type()}, {c.FIELD}attributes{c.END}={c.ATTR}{self.attributes}{c.END})"
     
     @staticmethod
     def from_(intrinsic_type_ast, variable_ast, attributes):
@@ -50,7 +53,7 @@ class IterationVariable:
         self.loop_statement = loop_statement
 
     def name(self):
-        return self.original_variable.name
+        return self.original_variable.name()
 
     def is_named(self, name):
         return self.name() == name
@@ -100,7 +103,7 @@ class LocalContext(Context):
 
     def get_variable_by_name(self, name) -> Variable:
         for variable in self.variables:
-            if variable.name == name:
+            if variable.name() == name:
                 return variable
         
         raise Exception(f"Variable with name {name} not found in context")
