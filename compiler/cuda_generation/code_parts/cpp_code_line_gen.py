@@ -1,32 +1,13 @@
 from compiler.context import Context
+from compiler.cuda_generation.code_parts.variable_namer import VariableNamer
 from compiler.debugging.color_printer import Colors as c
 from compiler.expression_walking.visitor_base import AstVisitor
 from compiler.fparser_tree_abstraction import FparserTree
 from compiler.kernel_abstraction import Kernel
 
-class FromContextNamer:
-    def get_name(self, node, context: Context) -> str:
-        if node.__class__.__name__.lower() == "name":
-            return self.get_name_from_name_node(node, context)
-        else:
-            raise Exception(f"Unsupported node type {c.CLASS}{node.__class__.__name__}{c.END} for naming. Function at: {__file__}")
 
-    def get_name_from_name_node(self, name_node, context: Context) -> str:
-        original_name_used_in_context = str(name_node)
-        variable = context.get_variable_by_name(original_name_used_in_context)
-        
-        real_variable_name = variable.name()
-        return real_variable_name
-    
-    def get_get_dim_sizes_variable_names_of(self, name_node, context: Context) -> list[str]:
-        original_name_used_in_context = str(name_node)
-        variable = context.get_variable_by_name(original_name_used_in_context)
-        
-        dim_count = variable.type().get_dim_count()
-        return [f"{variable.name()}_dim{dim_num + 1}" for dim_num in range(dim_count)]
-
-class CppCodeGenerator(AstVisitor):
-    def __init__(self, variable_name_generator=FromContextNamer()):
+class CppExprCodeGenerator(AstVisitor):
+    def __init__(self, variable_name_generator=VariableNamer()):
         self.variable_name_generator = variable_name_generator
 
     def generate_cpp_code(self, kernel: Kernel) -> str:
@@ -78,3 +59,15 @@ class CppCodeGenerator(AstVisitor):
         "Real_Literal_Constant")
     def _visit_int_literal_constant(self, node, context) -> str:
         return str(node)
+    
+class CppForLoopGenerator(AstVisitor):
+    def generate_cpp_for_loop(self, do_loop_context) -> str:
+        loop_var = do_loop_context.loop_variable()
+
+        start_ast = do_loop_context.start()
+        end_ast = do_loop_context.end()
+        step_ast = do_loop_context.step()
+    
+        
+
+        return f"for (int {loop_var} = {start}; {loop_var} <= {end}; {loop_var} += {step})"

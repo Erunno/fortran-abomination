@@ -2,8 +2,9 @@ from fparser.two.parser import ParserFactory
 from fparser.common.readfortran import FortranFileReader
 from pathlib import Path
 
+from compiler.cuda_generation.generator import FullCodeGenerator
 from compiler.cuda_generation.kernel_depence import DependenceResolver
-from compiler.expression_walking.cpp_code_line_gen import CppCodeGenerator
+from compiler.cuda_generation.code_parts.cpp_code_line_gen import CppExprCodeGenerator
 from compiler.expression_walking.used_var import UsedSizesFinder, UsedVarsFinder
 from compiler.kernel_abstraction import KernelFunctionDefinition
 from compiler.kernels_finder import KernelFinder, SourceFilesCollection_FromFilesystem
@@ -36,7 +37,7 @@ def main() -> None:
     print ("done parsing and extracting kernels\n\n")
 
     used_vars_finder = UsedVarsFinder()
-    used_vars = used_vars_finder.find_all_used_vars(kernels[0])
+    used_vars = used_vars_finder.find_used_vars(kernels[0])
 
     print("Used variables in the first kernel:")
     for var in used_vars:
@@ -62,10 +63,16 @@ def main() -> None:
         for kernel in group.kernels:
             print(str(kernel))
 
-    gen = CppCodeGenerator()
+
+    gen = CppExprCodeGenerator()
     generates_lines = gen.generate_cpp_code(kernels[0])
     print("\nGenerated C++ code for the first kernel:")
     print(generates_lines)
+
+    print("code generation:")
+    full_code_gen = FullCodeGenerator(kernels)
+    code = full_code_gen.generate_cuda_code()
+    print(f"Generated CUDA code:\n{code}")
 
 
 if __name__ == "__main__":

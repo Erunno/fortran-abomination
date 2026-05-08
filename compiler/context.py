@@ -20,6 +20,12 @@ class Variable:
     def is_input_output(self):
         return "intent(inout)" in self.attributes
     
+    def is_function_param(self):
+        return self._is_param
+
+    def set_as_param(self):
+        self._is_param = True
+
     def name(self):
         return self._name
 
@@ -58,18 +64,29 @@ class IterationVariable:
     def is_named(self, name):
         return self.name() == name
     
+    def is_function_param(self):
+        return False
+    
     def __str__(self):
         return f"{c.CLASS}IterationVariable{c.END}({c.FIELD}name{c.END}={c.VAR}{self.name()}{c.END}, {c.FIELD}original_variable{c.END}={self.original_variable})"
 
 class Context:
-    def _load_specifications(self, ast):
-        tree = FparserTree(ast)
+    def _load_variables(self, specifications_ast, declaration_ast):
+        tree = FparserTree(specifications_ast)
         specification_statements = tree.get_all_nodes_of_type("Type_Declaration_Stmt")
 
         all_variables = []
         for specification in specification_statements:
             variables = self._load_variables_from_specification(specification)
             all_variables.extend(variables)
+
+        dummy_arg_list = FparserTree(declaration_ast).get_all_nodes_of_type("Dummy_Arg_List")
+        dummy_arg_list = dummy_arg_list[0].children if dummy_arg_list else []
+        dummy_names = [str(arg) for arg in dummy_arg_list]
+
+        for variable in all_variables:
+            if variable.name() in dummy_names:
+                variable.set_as_param()
 
         return all_variables
     
@@ -99,7 +116,7 @@ class LocalContext(Context):
     def __init__(self, specifications_ast, declaration_ast):
         self.specifications_ast = FparserTree(specifications_ast)
         self.declaration_ast = FparserTree(declaration_ast)
-        self.variables = self._load_specifications(self.specifications_ast)
+        self.variables = self._load_variables(self.specifications_ast, self.declaration_ast)
 
     def get_variable_by_name(self, name) -> Variable:
         for variable in self.variables:
