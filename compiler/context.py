@@ -170,6 +170,15 @@ class DoLoopContext(Context):
         yield range_from, self
         yield range_to, self
 
+    def range_code_ast_s(self) -> tuple[any, any, any]:
+        loop_control_part = FparserTree(self.loop_statement.loop_ast).get_all_nodes_of_type("Loop_Control")[0]
+        range_from_to = loop_control_part.children[1][1]
+        range_from = range_from_to[0]
+        range_to = range_from_to[1]
+        step = None # TODO: support step in do loops
+
+        return range_from, range_to, step
+
     def __str__(self):
         parent_context_str = str(self.parent_context)
         tabbed_parent_context_str = "\t" + parent_context_str.replace("\n", "\n\t")

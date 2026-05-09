@@ -84,7 +84,7 @@ module gol_module
                 call third_gol_kernel(next_grid, next_grid, i, j)
             end do
 
-            next_grid(i,42) = current_grid(i,5) + i
+            ! next_grid(i,42) = current_grid(i,5) + i
         end do
 
         do i = 1, size(current_grid, 1)

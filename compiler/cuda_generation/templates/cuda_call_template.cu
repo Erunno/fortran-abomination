@@ -1,10 +1,10 @@
 {
-    // 3. Define execution configuration
+    // 3.$KERNEL_ID$ Define execution configuration
 
     // Define the primary iteration space size for the kernel grid
-    $TOTAL_ELEMENTS$
+    size_t total_elements = $TOTAL_ELEMENTS$;
 
-    int threadsPerBlock = 256;
+    int threadsPerBlock = $BLOCK_SIZE$;
     int blocksPerGrid = (total_elements + threadsPerBlock - 1) / threadsPerBlock;
     
     // 4. Launch the CUDA kernel
