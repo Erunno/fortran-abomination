@@ -1,34 +1,13 @@
 from pathlib import Path
 import re
 
+from compiler.cuda_generation.code_parts.cuda_kernel import CudaKernelGenerator
 from compiler.cuda_generation.code_parts.cuda_mem import CudaMemCodeGenerator
 from compiler.cuda_generation.code_parts.host_params import HostParamsGenerator
 from compiler.cuda_generation.code_parts.kernel_func_namer import KernelFuncNamer
+from compiler.cuda_generation.templates.template import Template
 from compiler.kernel_abstraction import Kernel
 
-
-class Template:
-    def __init__(self, file_path):
-        self.code_path = file_path
-        with open(file_path, 'r') as f:
-            self.code = f.read() 
-
-    def replace_placeholder(self, placeholder_name, replacement_code, tabs=0):
-        tabs_str = "    " * tabs
-        replacement_code = "\n".join([tabs_str + line for line in replacement_code.splitlines()])
-        regex_pattern = r"[ \t]*\$" + re.escape(placeholder_name) + r"\$"
-        self.code = re.sub(regex_pattern, replacement_code, self.code)
-
-    def write_to_file(self, output_file_path):
-        with open(output_file_path, 'w') as f:
-            f.write(self.code)
-
-    def print_code(self):
-        print(self.code)
-
-    def get_fresh_instance(self) -> "Template":
-        return Template(self.code_path)
-    
 class FullCodeGenerator:
     def __init__(self, kernels: list[Kernel]):
         path_to_templates = Path(__file__).resolve().parent / "templates"
@@ -40,6 +19,7 @@ class FullCodeGenerator:
         self.host_params_generator = HostParamsGenerator(kernels)
         self.kernel_func_namer = KernelFuncNamer()
         self.cuda_mem_code_generator = CudaMemCodeGenerator(kernels)
+        self.kernel_code_generator = CudaKernelGenerator(kernels)
 
     def generate_cuda_code(self) -> str:
         in_cpp_func_tabs = 2
@@ -57,6 +37,12 @@ class FullCodeGenerator:
 
         cuda_deallocation = self.cuda_mem_code_generator.generate_cuda_dealloc_code()
         self.cu_file_template.replace_placeholder("MEMORY_FREES", cuda_deallocation, tabs=in_cpp_func_tabs)
+
+        kernel_calls = self.kernel_code_generator.generate_cuda_kernel_calls()
+        self.cu_file_template.replace_placeholder("KERNELS_LAUNCH", kernel_calls, tabs=in_cpp_func_tabs)
+
+        kernel_codes = self.kernel_code_generator.generate_cuda_kernels_code()
+        self.cu_file_template.replace_placeholder("KERNEL_DEFINITIONS", kernel_codes, tabs=0)
 
         print(f"Generated host parameters:\n{host_params}")
         return self.cu_file_template.code

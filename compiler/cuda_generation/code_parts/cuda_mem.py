@@ -52,10 +52,10 @@ class CudaMemCodeGenerator:
 
             return f"cudaMemcpy({array_name_host}, {array_name_device}, {total_bytes_expr}, cudaMemcpyDeviceToHost);"
 
-        return '\n'.join([generate_cuda_d2h_copy_for(v) for v in self.all_used_arrays])
+        params_vars = [v for v in self.all_used_arrays if v.is_function_param()]
+        return '\n'.join([generate_cuda_d2h_copy_for(v) for v in params_vars])
     
-    
-    def _get_all_used_arrays(self, kernels: list[Kernel]) -> set:
+    def _get_all_used_arrays(self, kernels: list[Kernel]) -> list[Variable]:
         finder = UsedVarsFinder()
         used_vars: set[Variable] = set()
 
