@@ -67,6 +67,9 @@ class IterationVariable:
     def is_function_param(self):
         return False
     
+    def type(self):
+        return self.original_variable.type()
+    
     def __str__(self):
         return f"{c.CLASS}IterationVariable{c.END}({c.FIELD}name{c.END}={c.VAR}{self.name()}{c.END}, {c.FIELD}original_variable{c.END}={self.original_variable})"
 

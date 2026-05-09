@@ -36,3 +36,6 @@ class VariableNamer:
     
     def format_name(self, variable: Variable) -> str:
         return variable.name().lower()
+    
+    def format_device_name(self, variable: Variable) -> str:
+        return f"{self.format_name(variable)}_device"

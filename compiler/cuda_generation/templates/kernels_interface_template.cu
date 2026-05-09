@@ -13,7 +13,7 @@ extern "C" {
         $MEMORY_ALLOCATIONS$
 
         // 2. Copy inputs from Host (CPU) to Device (GPU)
-        $MEMCPY_H2D$
+        $CUDA_H2D_COPY$
 
         // 3. Launch the CUDA Kernels
         $KERNELS_LAUNCH$
@@ -22,7 +22,7 @@ extern "C" {
         cudaDeviceSynchronize();
 
         // 5. Copy results back from Device (GPU) to Host (CPU)
-        $MEMCPY_D2H$
+        $CUDA_D2H_COPY$
 
         // 6. Free the GPU memory
         $MEMORY_FREES$

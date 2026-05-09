@@ -1,5 +1,4 @@
-from tkinter import Variable
-
+from compiler.context import Variable
 from compiler.typing import TerminalType, Type
 
 
@@ -17,6 +16,9 @@ class CppTyper:
     
         return result
     
-        
+    def size_of(self, type: Type) -> str:
+        type_str = self.TYPE_TO_CPP_TYPE_STR[type.name.lower()]  
+        return f'sizeof({type_str})'
+
     def get_size_t(self) -> str:
         return "size_t"
