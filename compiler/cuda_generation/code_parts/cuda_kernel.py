@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from compiler.context import Context, DoLoopContext
-from compiler.cuda_generation.code_parts.cpp_code_line_gen import CppExprCodeGenerator, CppForLoopGenerator
+from compiler.cuda_generation.code_parts.cpp_code_line_gen import CppExprCodeGenerator
 from compiler.cuda_generation.code_parts.cpp_types_gen import CppTyper
 from compiler.cuda_generation.code_parts.do_loops import DoLoopGenerator
 from compiler.cuda_generation.code_parts.host_params import ParamsGenerator
@@ -18,7 +18,6 @@ class KernelGroupGenerator:
         self.variable_namer = VariableNamer()
         self.typer = CppTyper()
         self.expr_code_generator = CppExprCodeGenerator(self.variable_namer)
-        self.for_loop_generator = CppForLoopGenerator()
         self.do_generator = DoLoopGenerator()
         self.typer = CppTyper()
         self.used_vars_finder = UsedVarsFinder()
@@ -29,6 +28,7 @@ class KernelGroupGenerator:
 
         cuda_call_template_path = Path(__file__).resolve().parent.parent / "templates" / "cuda_call_template.cu"
         self.cuda_call_template = Template(str(cuda_call_template_path))
+        self.tab = Template.tab
 
         self.cuda_kernel_name = f"kernel_group_{self.group_id}"
         self.block_size = 256
@@ -93,8 +93,51 @@ class KernelGroupGenerator:
         indexing_calculations_code = self._get_outer_space_index_calculation_code()
         self.cuda_code_kernel_template.replace_placeholder("INDEX_MAPPING_LOGIC", indexing_calculations_code, tabs=1)
 
+        body_code = self._generate_kernel_body_code()
+        self.cuda_code_kernel_template.replace_placeholder("KERNEL_BODY", body_code, tabs=1)
+
         return self.cuda_code_kernel_template.code
 
+    def _generate_kernel_body_code(self) -> str:
+
+        def _tab_code(code: str) -> str:
+            return "\n".join([
+                self.tab + line if line.strip() else line
+                for line in code.split("\n")])
+        
+        def _generate_body_for_kernel(kernels: list[Kernel], loop_depth: int) -> tuple[str, list[Kernel]]:
+            if len(kernels) == 0:
+                return "", []
+
+            first_kernel, *rest_kernels = kernels
+            kernel_loop_depth = first_kernel.get_loop_depth()
+
+            if kernel_loop_depth > loop_depth:
+                first_unaddressed_loop_ctx = first_kernel.get_all_do_loop_contexts_from_outer_to_inner()[loop_depth]
+
+                loop_start = self.do_generator.generate_for_loop(first_unaddressed_loop_ctx)
+                code, rest_of_kernels = _generate_body_for_kernel(kernels, loop_depth + 1)
+                loop_end = self.do_generator.get_for_loop_closing()
+                
+                full_code = loop_start + _tab_code(code) + loop_end
+                return full_code, rest_of_kernels
+
+            kernel_code = self.expr_code_generator.generate_cpp_code(first_kernel)
+            rest_code, rest_of_kernels = _generate_body_for_kernel(rest_kernels, loop_depth)
+
+            full_code = kernel_code + "\n" + rest_code
+
+            return full_code, rest_of_kernels
+
+        kernels = self.group.kernels
+        full_code = ""
+        outer_loop_depth = len(self.group.get_shared_outer_loop_contexts())
+
+        while len(kernels) > 0:
+            code, kernels = _generate_body_for_kernel(kernels, outer_loop_depth)
+            full_code += code + "\n"
+
+        return full_code
 
     def _get_outer_space_index_calculation_code(self) -> str:
         missing_steps_vars = [
@@ -154,7 +197,6 @@ class CudaKernelGenerator:
         self.variable_namer = VariableNamer()
         self.typer = CppTyper()
         self.expr_code_generator = CppExprCodeGenerator(self.variable_namer)
-        self.for_loop_generator = CppForLoopGenerator()
 
         kernel_groups = DependenceResolver().group_kernels(kernels)
         self.kernel_group_generators = [KernelGroupGenerator(group, group_id) 

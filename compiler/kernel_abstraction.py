@@ -37,6 +37,9 @@ class Kernel:
             for range_code in do_loop_context.enum_range_code():
                 yield range_code, do_loop_context
 
+    def get_loop_depth(self) -> int:
+        self.context.enum_do_loop_contexts()
+        return len(list(self.context.enum_do_loop_contexts()))
 
     def __str__(self):
         code_str = "\n".join([f"{c.CODE}{str(line)}{c.END}" for line in self._code_lines])
@@ -54,6 +57,9 @@ class Kernel:
         contexts = list(self.context.enum_do_loop_contexts())
         contexts.reverse()
         return list(contexts)
+    
+    def get_all_do_loop_contexts_from_inner_to_outer(self) -> list[DoLoopContext]:
+        return list(self.context.enum_do_loop_contexts())
 
 class KernelFunctionDefinition:
     def __init__(self, kernel_ast):

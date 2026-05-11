@@ -2,6 +2,7 @@ import re
 
 
 class Template:
+    tab = "    "
     def __init__(self, file_path):
         self.code_path = file_path
         with open(file_path, 'r') as f:
@@ -12,7 +13,7 @@ class Template:
             self.code = self.code.replace(f"${placeholder_name}$", replacement_code)
             return
 
-        tabs_str = "    " * tabs
+        tabs_str = self.tab * tabs
         replacement_code = "\n".join([tabs_str + line for line in replacement_code.splitlines()])
         regex_pattern = r"[ \t]*\$" + re.escape(placeholder_name) + r"\$"
         self.code = re.sub(regex_pattern, replacement_code, self.code)

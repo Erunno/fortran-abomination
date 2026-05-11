@@ -79,14 +79,3 @@ class CppExprCodeGenerator(AstVisitor):
 
         return self._default_visit(node.tree, context)
 
-class CppForLoopGenerator(AstVisitor):
-    def generate_cpp_for_loop(self, do_loop_context) -> str:
-        loop_var = do_loop_context.loop_variable()
-
-        start_ast = do_loop_context.start()
-        end_ast = do_loop_context.end()
-        step_ast = do_loop_context.step()
-    
-        
-
-        return f"for (int {loop_var} = {start}; {loop_var} <= {end}; {loop_var} += {step})"

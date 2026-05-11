@@ -106,12 +106,12 @@ module gol_module
         integer, intent(out) :: out_arr(:,:)
         integer, intent(in) :: ii, jj
 
-        integer :: i
+        integer :: m
 
         ! out_arr(ii,jj) = in_arr(ii,jj) + ii + jj
 
-        do i = 1, size(in_arr, 1)
-            out_arr(ii,jj) = out_arr(ii,jj) + in_arr(i,jj)
+        do m = 1, size(in_arr, 1)
+            out_arr(ii,jj) = out_arr(ii,jj) + in_arr(m,jj)
         end do
 
     end subroutine third_gol_kernel
