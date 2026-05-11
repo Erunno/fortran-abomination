@@ -16,11 +16,13 @@ class DoLoopGenerator:
         from_code = self.cpp_expr_gen._visit(from_ast, ctx)
         to_code = self.cpp_expr_gen._visit(to_ast, ctx)
         
-        count_code = f"({to_code} - {from_code} + 1)" # +1 because Fortran do loops are inclusive
-
         if step_ast is not None:
+            # If a step is defined, use ceiling division: (distance + step) / step
             step_code = self.cpp_expr_gen._visit(step_ast, ctx)
-            count_code = f"({count_code} / {step_code})"
+            count_code = f"(({to_code} - {from_code} + {step_code}) / {step_code})"
+        else:
+            # Implied step of 1: distance + 1
+            count_code = f"({to_code} - {from_code} + 1)"
 
         return count_code
     
@@ -33,14 +35,10 @@ class DoLoopGenerator:
         to_code = self.cpp_expr_gen._visit(to_ast, ctx)
         step_code = self.cpp_expr_gen._visit(step_ast, ctx) if step_ast is not None else None
 
-        # Adjusting for 0-based indexing in C++
-        from_code = f"({from_code}) - 1"
-        to_code = f"({to_code}) - 1"
-
         if step_code is not None:
-            loop_code = f"for (int {iter_var.name().lower()} = {from_code}; {iter_var.name().lower()} <= {to_code}; {iter_var.name().lower()} += {step_code}) {{\n"
+            loop_code = f"for ({iter_var.name().lower()} = {from_code}; {iter_var.name().lower()} <= {to_code}; {iter_var.name().lower()} += {step_code}) {{\n"
         else:
-            loop_code = f"for (int {iter_var.name().lower()} = {from_code}; {iter_var.name().lower()} <= {to_code}; {iter_var.name().lower()}++) {{\n"
+            loop_code = f"for ({iter_var.name().lower()} = {from_code}; {iter_var.name().lower()} <= {to_code}; {iter_var.name().lower()}++) {{\n"
 
         return loop_code
     

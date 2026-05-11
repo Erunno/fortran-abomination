@@ -75,7 +75,7 @@ class ParamsGenerator:
 
     def _get_device_param_decl(self, var: Variable) -> str:
         cpp_type_str = self.cpp_typer.get_cpp_type_str(var.type())
-        array_name_device = self.variable_namer.format_device_name(var)
+        array_name_device = self.variable_namer.format_name(var)
 
         if not var.type().is_array():
             return f"{cpp_type_str} {array_name_device}"
@@ -98,7 +98,7 @@ class ParamsGenerator:
     
     def _get_device_params_variables(self) -> list[Variable]:
         used_vars = UsedVarsFinder().find_used_vars(self.kernels)
-        used_vars = [var for var in used_vars if not var.is_iterator_var()]
+        used_vars = [var for var in used_vars if var.is_function_param()]
         used_vars.sort(key=lambda v: v.name())
 
         return list(set(used_vars))

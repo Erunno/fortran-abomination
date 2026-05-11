@@ -62,9 +62,6 @@ class KernelGroupGenerator:
             to_code = self.expr_code_generator.generate_cpp_code_for_ast(to_ast, ctx)
             step_code = self.expr_code_generator.generate_cpp_code_for_ast(step_ast, ctx) if step_ast is not None else None
 
-            from_code = f'({from_code}) - 1'
-            to_code = f'({to_code}) - 1'
-
             iter_var_names = self.variable_namer.format_iter_var_names(iter_var)
             type_str = self.typer.get_cpp_type_str(iter_var.type())
 
@@ -89,6 +86,9 @@ class KernelGroupGenerator:
             outer_iter_space=self.group.get_shared_outer_loop_contexts()
         )
         self.cuda_code_kernel_template.replace_placeholder("DEVICE_PARAMETERS", device_param_decls, tabs=1)
+        
+        local_vars_decls_code = self._generate_decls_of_local_vars(self.group.kernels)
+        self.cuda_code_kernel_template.replace_placeholder("LOCAL_VAR_DECLS", local_vars_decls_code, tabs=1)
 
         indexing_calculations_code = self._get_outer_space_index_calculation_code()
         self.cuda_code_kernel_template.replace_placeholder("INDEX_MAPPING_LOGIC", indexing_calculations_code, tabs=1)
@@ -97,6 +97,16 @@ class KernelGroupGenerator:
         self.cuda_code_kernel_template.replace_placeholder("KERNEL_BODY", body_code, tabs=1)
 
         return self.cuda_code_kernel_template.code
+
+    def _generate_decls_of_local_vars(self, kernels: list[Kernel]) -> str:
+        used_vars = self.used_vars_finder.find_used_vars(kernels)
+        local_vars = [var for var in used_vars if not var.is_function_param()]
+        
+        decls = [
+            f"{self.typer.get_cpp_type_str(var.type())} {self.variable_namer.format_name(var)};"
+            for var in local_vars]
+
+        return "\n".join(decls)
 
     def _generate_kernel_body_code(self) -> str:
 
@@ -128,7 +138,7 @@ class KernelGroupGenerator:
             full_code = kernel_code + "\n" + rest_code
 
             return full_code, rest_of_kernels
-
+        
         kernels = self.group.kernels
         full_code = ""
         outer_loop_depth = len(self.group.get_shared_outer_loop_contexts())
@@ -164,29 +174,31 @@ class KernelGroupGenerator:
         if decl_constexpr_step_vars:
             code_lines.append(decl_constexpr_step_vars)
             
-        size_t = self.typer.get_size_t() 
+        size_t = self.typer.get_size_t()
 
         # Initialize the working index
         code_lines.append(f"{size_t} current_idx = idx;")
         
         # Unroll the dimension calculations into C++
         for i, var in enumerate(indexing_vars_names):
+            iter_type = self.typer.get_cpp_type_str(all_indexing_vars[i].type()) 
+            
             num_dim_var = f"num_{var.name}"
             local_dim_var = f"local_{var.name}"
             
             code_lines.append(f"\n// Calculate index for '{var.name}' dimension")
-            code_lines.append(f"{size_t} {num_dim_var} = {get_count_in_dim(var)};")
+            code_lines.append(f"{iter_type} {num_dim_var} = {get_count_in_dim(var)};")
             
             # For all dimensions EXCEPT the last one, use modulo and division
             if i < len(indexing_vars_names) - 1:
-                code_lines.append(f"{size_t} {local_dim_var} = current_idx % {num_dim_var};")
-                code_lines.append(f"{var.type} {var.name} = {var.from_name} + {local_dim_var} * {var.step_name};")
+                code_lines.append(f"{iter_type} {local_dim_var} = current_idx % {num_dim_var};")
+                code_lines.append(f"{var.name} = {var.from_name} + {local_dim_var} * {var.step_name};")
                 code_lines.append(f"current_idx /= {num_dim_var};")
             else:
                 # OPTIMIZATION: The last (slowest) dimension doesn't need modulo or division.
                 # current_idx inherently contains only the remainder for this final dimension.
-                code_lines.append(f"{size_t} {local_dim_var} = current_idx;")
-                code_lines.append(f"{var.type} {var.name} = {var.from_name} + {local_dim_var} * {var.step_name};")
+                code_lines.append(f"{iter_type} {local_dim_var} = current_idx;")
+                code_lines.append(f"{var.name} = {var.from_name} + {local_dim_var} * {var.step_name};")
 
         return "\n".join(code_lines)
 

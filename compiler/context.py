@@ -8,6 +8,7 @@ class Variable:
         self._type = type
         self.attributes = attributes
         self._is_param = False
+        self._suffix = ""
 
     def is_input(self):
         return "intent(in)" in self.attributes
@@ -30,8 +31,11 @@ class Variable:
     def set_as_param(self):
         self._is_param = True
 
+    def set_name_suffix(self, suffix):
+        self._suffix = suffix
+
     def name(self):
-        return self._name
+        return self._name + self._suffix
 
     def __str__(self):
         return f"{c.CLASS}Variable{c.END}({c.FIELD}name{c.END}={c.VAR}{self.name()}{c.END}, {c.FIELD}type{c.END}={self.type()}, {c.FIELD}attributes{c.END}={c.ATTR}{self.attributes}{c.END})"
@@ -116,6 +120,9 @@ class Context:
     def get_variable_by_name(self, name) -> Variable:
         raise NotImplementedError("This method should be implemented by subclasses of Context")
 
+    def variable_defined(self, variable: Variable) -> bool:
+        raise NotImplementedError("This method should be implemented by subclasses of Context")
+
     def enum_do_loop_contexts(self):
         raise NotImplementedError("This method should be implemented by subclasses of Context")
 
@@ -134,6 +141,13 @@ class LocalContext(Context):
                 return variable
         
         raise Exception(f"Variable with name {name} not found in context")
+
+    def variable_defined(self, variable: Variable) -> bool:
+        for var in self.variables:
+            if var.name() == variable.name():
+                return True
+        
+        return False
 
     def __str__(self):
         variables_str = "\n".join([str(var) for var in self.variables])
@@ -166,6 +180,12 @@ class DoLoopContext(Context):
             return self.iteration_variable
         
         return self.parent_context.get_variable_by_name(name)
+
+    def variable_defined(self, variable: Variable) -> bool:
+        if self.iteration_variable.is_named(variable.name()):
+            return True
+        
+        return self.parent_context.variable_defined(variable)
 
     def enum_do_loop_contexts(self):
         yield self
@@ -202,12 +222,39 @@ class ContextWithArguments(Context):
             raise Exception(f"Number of call arguments ({len(call_arguments)}) does not match number of function arguments ({len(function_arg_list)})")
         
         self.translation_dict = {arg_name: arg for arg_name, arg in zip(function_arg_list, call_arguments)}
+        self.translation_dict.update(self._rename_reused_variables())
 
     def get_variable_by_name(self, name) -> Variable:
         if name in self.translation_dict:
             return self.translation_dict[name]
-        return self.function_local_context.get_variable_by_name(name)
-    
+
+        raise Exception(f"Variable with name {name} not found in context")
+
+    def variable_defined(self, variable: Variable) -> bool:
+        if variable.name() in self.translation_dict:
+            return True
+
+        return self.function_local_context.variable_defined(variable)
+
+    def _rename_reused_variables(self) -> dict[str, Variable]:
+        renamed_dict = {}
+
+        for local_var in self.function_local_context.variables:
+
+            if local_var.name() in self.translation_dict:
+                continue
+
+            original_name = local_var.name()
+
+            i = 0
+            while self.caller_context.variable_defined(local_var):
+                local_var.set_name_suffix(f"_{i}")
+                i += 1
+
+            renamed_dict[original_name] = local_var
+
+        return renamed_dict
+
     def is_call_context(self):
         return True
     

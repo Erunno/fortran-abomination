@@ -26,6 +26,7 @@ def main() -> None:
     print (gol.name())
 
     kernels = gol.extract_kernels_graph()
+    func_name = gol.name()
 
     for kernel in kernels:
         print(str(kernel))
@@ -70,7 +71,7 @@ def main() -> None:
     print(generates_lines)
 
     print("code generation:")
-    full_code_gen = FullCodeGenerator(kernels)
+    full_code_gen = FullCodeGenerator(kernels, func_name)
     code = full_code_gen.generate_cuda_code()
     print(f"Generated CUDA code:\n{code}")
 

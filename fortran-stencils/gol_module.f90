@@ -106,14 +106,31 @@ module gol_module
         integer, intent(out) :: out_arr(:,:)
         integer, intent(in) :: ii, jj
 
-        integer :: m
+        integer :: i, N
 
         ! out_arr(ii,jj) = in_arr(ii,jj) + ii + jj
 
-        do m = 1, size(in_arr, 1)
-            out_arr(ii,jj) = out_arr(ii,jj) + in_arr(m,jj)
+        do i = 1, size(in_arr, 1)
+            N = 42
+            out_arr(ii,jj) = out_arr(ii,jj) + in_arr(i,jj)
+            call fourth_gol_kernel(out_arr, out_arr, ii, jj)
         end do
 
     end subroutine third_gol_kernel
+
+    ! kernel
+    subroutine fourth_gol_kernel(in_arr, out_arr, ii, jj)
+        implicit none
+
+        integer, intent(in) :: in_arr(:,:)
+        integer, intent(out) :: out_arr(:,:)
+        integer, intent(in) :: ii, jj
+
+        integer :: i
+
+        i = 69
+        out_arr(ii + i,jj) = out_arr(ii + 1,jj + 1) + in_arr(i + 1,jj + 1)
+
+    end subroutine fourth_gol_kernel
 
 end module gol_module

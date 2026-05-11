@@ -9,7 +9,7 @@ from compiler.cuda_generation.templates.template import Template
 from compiler.kernel_abstraction import Kernel
 
 class FullCodeGenerator:
-    def __init__(self, kernels: list[Kernel]):
+    def __init__(self, kernels: list[Kernel], function_name_key: str):
         path_to_templates = Path(__file__).resolve().parent / "templates"
 
         self.cu_file_template = Template(path_to_templates / "kernels_interface_template.cu")
@@ -21,7 +21,12 @@ class FullCodeGenerator:
         self.cuda_mem_code_generator = CudaMemCodeGenerator(kernels)
         self.kernel_code_generator = CudaKernelGenerator(kernels)
 
+        self.function_name = function_name_key
+
     def generate_cuda_code(self) -> str:
+
+        self.cu_file_template.replace_placeholder("KERNEL_NAME", self.function_name, tabs=0)
+
         in_cpp_func_tabs = 2
         host_params = self.host_params_generator.generate_host_params()
         self.cu_file_template.replace_placeholder("HOST_PARAMETERS", host_params, tabs=in_cpp_func_tabs)

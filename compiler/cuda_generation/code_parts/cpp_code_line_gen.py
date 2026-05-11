@@ -37,11 +37,13 @@ class CppExprCodeGenerator(AstVisitor):
         subscript_nodes = FparserTree(node).get_first_child_of_type("Section_Subscript_List")
         
         name_part_code = self._visit(name_node, context)
-        subscripts = [self._visit(subscript, context) for subscript in FparserTree(subscript_nodes).children()]
+        subscripts = [
+            f'{self._visit(subscript, context)}'
+            for subscript in FparserTree(subscript_nodes).children()]
 
         dim_sizes_variable_names = self.var_namer.get_get_dim_sizes_variable_names_of(name_node, context)
 
-        return f"{name_part_code}[IDX({', '.join(subscripts)}, {', '.join(dim_sizes_variable_names)})]"
+        return f"{name_part_code}[F_IDX({', '.join(subscripts)}, {', '.join(dim_sizes_variable_names)})]"
 
     @AstVisitor.accept("Name")
     def _visit_name(self, node, context) -> str:

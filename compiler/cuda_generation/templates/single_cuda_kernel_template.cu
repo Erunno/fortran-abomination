@@ -11,6 +11,9 @@ void $KERNEL_NAME$_device(
         return;
     }
 
+    // Declarations of local variables used in the kernel body
+    $LOCAL_VAR_DECLS$
+
     // Map the 1D index back to column-major multi-dimensional coordinates
     $INDEX_MAPPING_LOGIC$
 
