@@ -122,6 +122,15 @@ class LoopStatement:
         do_loop_control_types = ["Nonlabel_Do_Stmt", "End_Do_Stmt"]
         return GroupOfNodes(FparserTree(self.loop_ast).get_children_without(do_loop_control_types))
     
+    def range_code_ast_s(self) -> tuple[any, any, any]:
+        loop_control_part = FparserTree(self.loop_ast).get_all_nodes_of_type("Loop_Control")[0]
+        range_from_to_step = loop_control_part.children[1][1]
+        range_from = range_from_to_step[0]
+        range_to = range_from_to_step[1]
+        step = range_from_to_step[2] if len(range_from_to_step) > 2 else None
+
+        return range_from, range_to, step
+    
     def get_loop_control_part(self):
         return FparserTree(self.loop_ast).get_all_nodes_of_type("Loop_Control")[0]
 

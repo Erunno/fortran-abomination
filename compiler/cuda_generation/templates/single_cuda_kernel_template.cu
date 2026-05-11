@@ -6,14 +6,14 @@ void $KERNEL_NAME$_device(
     // 1D Thread Index
     size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    $LOCAL_VARIABLE_DECLARATIONS$
-    
     // Ensure we don't go out of bounds
-    if (idx < total_elements) {
-        // Map the 1D index back to column-major multi-dimensional coordinates
-        $INDEX_MAPPING_LOGIC$
-
-        // Perform the calculation
-        $KERNEL_BODY$
+    if (idx >= total_elements) {
+        return;
     }
+
+    // Map the 1D index back to column-major multi-dimensional coordinates
+    $INDEX_MAPPING_LOGIC$
+
+    // Perform the calculation
+    $KERNEL_BODY$
 }

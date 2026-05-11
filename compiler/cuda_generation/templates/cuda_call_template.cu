@@ -7,6 +7,8 @@
     int threadsPerBlock = $BLOCK_SIZE$;
     int blocksPerGrid = (total_elements + threadsPerBlock - 1) / threadsPerBlock;
     
+    $RANGES_CALCULATIONS$
+
     // 4. Launch the CUDA kernel
     $KERNEL_NAME$_device<<<blocksPerGrid, threadsPerBlock>>>(
         $KERNEL_ARGS$,

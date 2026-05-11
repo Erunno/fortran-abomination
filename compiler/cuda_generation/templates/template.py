@@ -8,6 +8,10 @@ class Template:
             self.code = f.read() 
 
     def replace_placeholder(self, placeholder_name, replacement_code, tabs=0):
+        if tabs == 0:
+            self.code = self.code.replace(f"${placeholder_name}$", replacement_code)
+            return
+
         tabs_str = "    " * tabs
         replacement_code = "\n".join([tabs_str + line for line in replacement_code.splitlines()])
         regex_pattern = r"[ \t]*\$" + re.escape(placeholder_name) + r"\$"

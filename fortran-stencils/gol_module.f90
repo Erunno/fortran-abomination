@@ -70,16 +70,18 @@ module gol_module
     end subroutine gol_kernel
 
     ! kernel
-    subroutine second_gol_kernel(current_grid, next_grid)
+    subroutine second_gol_kernel(current_grid, next_grid, N)
         implicit none
 
         integer, intent(in) :: current_grid(:,:)
         integer, intent(out) :: next_grid(:,:)
 
-        integer :: i, j
+        integer :: i, j, x, N
 
-        do i = 1, size(current_grid, 1)
-            do j = 1, size(current_grid, 2)
+        ! x = 42
+
+        do i = 1, size(current_grid, 1), 2
+            do j = 1, N
                 next_grid(i,j) = current_grid(i,j) + i + j + 1 + 1.2
                 call third_gol_kernel(next_grid, next_grid, i, j)
             end do
@@ -87,8 +89,8 @@ module gol_module
             ! next_grid(i,42) = current_grid(i,5) + i
         end do
 
-        do i = 1, size(current_grid, 1)
-            next_grid(i,42) = current_grid(i,5) + i
+        do i = 1, size(next_grid, 1)
+            next_grid(i,42) = next_grid(i,5) + i
         end do
 
     end subroutine second_gol_kernel

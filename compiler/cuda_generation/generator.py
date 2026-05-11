@@ -3,7 +3,7 @@ import re
 
 from compiler.cuda_generation.code_parts.cuda_kernel import CudaKernelGenerator
 from compiler.cuda_generation.code_parts.cuda_mem import CudaMemCodeGenerator
-from compiler.cuda_generation.code_parts.host_params import HostParamsGenerator
+from compiler.cuda_generation.code_parts.host_params import ParamsGenerator
 from compiler.cuda_generation.code_parts.kernel_func_namer import KernelFuncNamer
 from compiler.cuda_generation.templates.template import Template
 from compiler.kernel_abstraction import Kernel
@@ -16,7 +16,7 @@ class FullCodeGenerator:
         self.cuda_call_template = Template(path_to_templates / "cuda_call_template.cu")
         self.cuda_kernel_template = Template(path_to_templates / "single_cuda_kernel_template.cu")
 
-        self.host_params_generator = HostParamsGenerator(kernels)
+        self.host_params_generator = ParamsGenerator(kernels)
         self.kernel_func_namer = KernelFuncNamer()
         self.cuda_mem_code_generator = CudaMemCodeGenerator(kernels)
         self.kernel_code_generator = CudaKernelGenerator(kernels)

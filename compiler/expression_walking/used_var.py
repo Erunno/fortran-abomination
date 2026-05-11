@@ -5,7 +5,18 @@ from compiler.kernel_abstraction import Kernel
 
 @AstVisitor.use_visit_all_children_as_default()
 class UsedVarsFinder(AstVisitor):
-    def find_used_vars(self, kernel: Kernel) -> list[Variable]:
+    def find_used_vars(self, kernels: Kernel | list[Kernel]) -> list[Variable]:
+        if not isinstance(kernels, list):
+            kernels = [kernels]
+
+        all_used_vars = set()
+        for kernel in kernels:
+            used_vars_in_kernel = self._find_in_one_kernel(kernel)
+            all_used_vars.update(used_vars_in_kernel)
+
+        return list(all_used_vars)
+
+    def _find_in_one_kernel(self, kernel: Kernel) -> list[Variable]:
         used_in_code = self._visit_all_code_lines_of(kernel, post_process='flatten')
         used_in_do_stmts = self._visit_all_do_stmt_ranges_of(kernel, post_process='flatten')
 

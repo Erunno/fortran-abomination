@@ -7,6 +7,7 @@ class Variable:
         self._name = name
         self._type = type
         self.attributes = attributes
+        self._is_param = False
 
     def is_input(self):
         return "intent(in)" in self.attributes
@@ -22,6 +23,9 @@ class Variable:
     
     def is_function_param(self):
         return self._is_param
+    
+    def is_iterator_var(self):
+        return False
 
     def set_as_param(self):
         self._is_param = True
@@ -69,6 +73,9 @@ class IterationVariable:
     
     def type(self):
         return self.original_variable.type()
+    
+    def is_iterator_var(self):
+        return True
     
     def __str__(self):
         return f"{c.CLASS}IterationVariable{c.END}({c.FIELD}name{c.END}={c.VAR}{self.name()}{c.END}, {c.FIELD}original_variable{c.END}={self.original_variable})"
@@ -151,6 +158,9 @@ class DoLoopContext(Context):
             self.parent_context.get_variable_by_name(iter_var_name),
             do_statement)
 
+    def get_iteration_variable(self) -> IterationVariable:
+        return self.iteration_variable
+
     def get_variable_by_name(self, name) -> Variable | IterationVariable:
         if self.iteration_variable.is_named(name):
             return self.iteration_variable
@@ -171,13 +181,7 @@ class DoLoopContext(Context):
         yield range_to, self
 
     def range_code_ast_s(self) -> tuple[any, any, any]:
-        loop_control_part = FparserTree(self.loop_statement.loop_ast).get_all_nodes_of_type("Loop_Control")[0]
-        range_from_to = loop_control_part.children[1][1]
-        range_from = range_from_to[0]
-        range_to = range_from_to[1]
-        step = None # TODO: support step in do loops
-
-        return range_from, range_to, step
+        return self.loop_statement.range_code_ast_s()
 
     def __str__(self):
         parent_context_str = str(self.parent_context)

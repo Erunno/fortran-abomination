@@ -38,4 +38,17 @@ class VariableNamer:
         return variable.name().lower()
     
     def format_device_name(self, variable: Variable) -> str:
+        if not variable.type().is_array():
+            return self.format_name(variable)
+        
         return f"{self.format_name(variable)}_device"
+    
+    class IterNames:
+        def __init__(self, variable: Variable):
+            self.name = f"{variable.name().lower()}_iter"
+            self.from_name = f"{variable.name().lower()}_from"
+            self.to_name = f"{variable.name().lower()}_to"
+            self.step_name = f"{variable.name().lower()}_step"
+
+    def format_iter_var_names(self, variable: Variable) -> IterNames:
+        return VariableNamer.IterNames(variable)

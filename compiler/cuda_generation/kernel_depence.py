@@ -1,16 +1,17 @@
 from itertools import groupby
 
+from compiler.context import DoLoopContext
 from compiler.kernel_abstraction import Kernel
 
 
 class KernelGroup:
-    def __init__(self, kernels, shared_outer_loop_contexts):
+    def __init__(self, kernels, shared_outer_loop_contexts: list[DoLoopContext]):
         if len(kernels) == 0:
             raise Exception("Cannot create a KernelGroup with no kernels")
         self.kernels = kernels
         self.shared_outer_loop_contexts = shared_outer_loop_contexts
 
-    def get_shared_outer_loop_contexts(self) -> list:
+    def get_shared_outer_loop_contexts(self) -> list[DoLoopContext]:
         return self.shared_outer_loop_contexts
 
 class DependenceResolver:

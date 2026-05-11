@@ -14,6 +14,9 @@ class CppExprCodeGenerator(AstVisitor):
         code_lines = self._visit_all_code_lines_of(kernel)
         return "\n".join(code_lines)
     
+    def generate_cpp_code_for_ast(self, ast, context) -> str:
+        return self._visit(ast, context)
+
     @AstVisitor.accept("Assignment_Stmt")
     def _visit_assignment_stmt(self, node, context) -> str:
         to_node, _, from_node = node.children
