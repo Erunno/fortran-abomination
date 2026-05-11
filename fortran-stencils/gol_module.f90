@@ -76,14 +76,17 @@ module gol_module
         integer, intent(in) :: current_grid(:,:)
         integer, intent(out) :: next_grid(:,:)
 
-        integer :: i, j, x, N
+        integer :: i, j, x, N, k
 
         ! x = 42
 
         do i = 1, size(current_grid, 1), 2
             do j = 1, N
-                next_grid(i,j) = current_grid(i,j) + i + j + 1 + 1.2
-                call third_gol_kernel(next_grid, next_grid, i, j)
+                do k = 1, 10, 3
+                    next_grid(i,j) = next_grid(i,j) + current_grid(k,j) + i + j
+                    next_grid(i,j) = current_grid(i,j) + i + j + 1 + 1.2
+                    call third_gol_kernel(next_grid, next_grid, i, j)
+                end do
             end do
 
             ! next_grid(i,42) = current_grid(i,5) + i

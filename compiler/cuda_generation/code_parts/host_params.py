@@ -17,8 +17,15 @@ class ParamsGenerator:
     
     def generate_device_params_decl(self, outer_iter_space: list[DoLoopContext]) -> str:
         para_vars = self._get_device_params_variables()
+        params_decl = ",\n".join([self._get_device_param_decl(var) for var in para_vars])
 
-        return ",\n".join([self._get_device_param_decl(var) for var in para_vars])
+        if len(outer_iter_space) == 0:
+            return params_decl
+        
+        iter_space_params = self._generate_iter_space_params(outer_iter_space)
+        iter_space_params_decl = ",\n".join([", ".join([type_str + " " + name for type_str, name in part]) for part in iter_space_params])
+
+        return f"{params_decl},\n{iter_space_params_decl}"
 
     def generate_device_param_call(self, outer_iter_space: list[DoLoopContext]) -> str:
         para_vars = self._get_device_params_variables()
@@ -27,6 +34,16 @@ class ParamsGenerator:
         if len(outer_iter_space) == 0:
             return params_call
 
+        iter_space_params = self._generate_iter_space_params(outer_iter_space)
+        parts_without_types = [
+            [name for type_str, name in part] for part in iter_space_params
+        ]
+
+        iter_space_params_call = ",\n".join([", ".join(part) for part in parts_without_types])
+
+        return f"{params_call},\n{iter_space_params_call}"
+    
+    def _generate_iter_space_params(self, outer_iter_space: list[DoLoopContext]) -> list[list[tuple[str, str]]]:
         iter_vars = [ctx.get_iteration_variable() for ctx in outer_iter_space]
         def get_part_for(iter_var: IterationVariable) -> str:
             iter_var_names = self.variable_namer.format_iter_var_names(iter_var)
@@ -37,11 +54,12 @@ class ParamsGenerator:
             if step_ast is None:
                 parts.remove(iter_var_names.step_name)
 
-            return ", ".join(parts)
+            type_str = self.cpp_typer.get_cpp_type_str(iter_var.type())
 
-        iter_space_call = ",\n".join([get_part_for(iter_var) for iter_var in iter_vars])
-        return f"{params_call},\n{iter_space_call}"
-    
+            return [(type_str, name) for name in parts]
+
+        return [get_part_for(iter_var) for iter_var in iter_vars]
+
     def _get_iter_space_(self, outer_iter_space: list[DoLoopContext]) -> list[Variable]:
         iter_space_vars = []
         for ctx in outer_iter_space:

@@ -1,8 +1,12 @@
 
+from compiler.cuda_generation.code_parts.cpp_types_gen import CppTyper
 from compiler.debugging.color_printer import Colors as c
 from compiler.context import Context, Variable
 
 class VariableNamer:
+    def __init__(self):
+        self.cpp_typer = CppTyper()
+
     def get_name(self, node, context: Context) -> str:
         if node.__class__.__name__.lower() == "name":
             return self.get_name_from_name_node(node, context)
@@ -44,11 +48,13 @@ class VariableNamer:
         return f"{self.format_name(variable)}_device"
     
     class IterNames:
-        def __init__(self, variable: Variable):
-            self.name = f"{variable.name().lower()}_iter"
+        def __init__(self, variable: Variable, type_str):
+            self.type = type_str
+            self.name = f"{variable.name().lower()}"
             self.from_name = f"{variable.name().lower()}_from"
             self.to_name = f"{variable.name().lower()}_to"
             self.step_name = f"{variable.name().lower()}_step"
 
     def format_iter_var_names(self, variable: Variable) -> IterNames:
-        return VariableNamer.IterNames(variable)
+        type_str = self.cpp_typer.get_cpp_type_str(variable.type())
+        return VariableNamer.IterNames(variable, type_str)
