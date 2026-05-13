@@ -21,7 +21,8 @@ class KernelGroupGenerator:
         self.do_generator = DoLoopGenerator()
         self.typer = CppTyper()
         self.used_vars_finder = UsedVarsFinder()
-        self.param_gen = ParamsGenerator(group.kernels)
+        self.param_gen = ParamsGenerator(
+            group.kernels, preceding_kernels=group.get_all_preceding_kernels())
 
         cuda_ker_template_path = Path(__file__).resolve().parent.parent / "templates" / "single_cuda_kernel_template.cu"
         self.cuda_code_kernel_template = Template(str(cuda_ker_template_path))
@@ -33,6 +34,9 @@ class KernelGroupGenerator:
         self.cuda_kernel_name = f"kernel_group_{self.group_id}"
         self.block_size = 256
 
+
+    def generate_no_iter_space_kernel_code(self) -> str:
+        return self.expr_code_generator.generate_cpp_code(self.group.kernels)
 
     def generate_cuda_kernel_call(self) -> str:
         self.cuda_call_template.replace_placeholder("KERNEL_ID", str(self.group_id))
@@ -100,7 +104,11 @@ class KernelGroupGenerator:
 
     def _generate_decls_of_local_vars(self, kernels: list[Kernel]) -> str:
         used_vars = self.used_vars_finder.find_used_vars(kernels)
-        local_vars = [var for var in used_vars if not var.is_function_param()]
+        param_vars = self.param_gen.get_device_params_variables()
+        
+        local_vars = [var 
+                      for var in used_vars 
+                      if not var.is_function_param() and var not in param_vars]
         
         decls = [
             f"{self.typer.get_cpp_type_str(var.type())} {self.variable_namer.format_name(var)};"
@@ -212,11 +220,40 @@ class CudaKernelGenerator:
 
         kernel_groups = DependenceResolver().group_kernels(kernels)
         self.kernel_group_generators = [KernelGroupGenerator(group, group_id) 
-                                        for group_id, group in enumerate(kernel_groups)] 
+                                        for group_id, group in enumerate(kernel_groups)]
+        
+        self.variable_finder = UsedVarsFinder()
 
     def generate_cuda_kernel_calls(self) -> str:
-        return "\n".join([group_gen.generate_cuda_kernel_call() for group_gen in self.kernel_group_generators])
+        return "\n".join([self._handle_kernel_group_call(group_gen) for group_gen in self.kernel_group_generators])
+
+    def generate_host_local_var_decls(self) -> str:
+        no_iter_kernels = [
+            kernel
+            for group_gen in self.kernel_group_generators 
+            for kernel in group_gen.group.kernels
+            if len(group_gen.group.get_shared_outer_loop_contexts()) == 0]
+        
+        used_vars = self.variable_finder.find_used_vars(no_iter_kernels)
+        local_vars = [var for var in used_vars if not var.is_function_param()]
+
+        decls = [
+            f"{self.typer.get_cpp_type_str(var.type())} {self.variable_namer.format_name(var)};"
+            for var in local_vars]
+
+        return "\n".join(set(decls))
+
+
+    def _handle_kernel_group_call(self, group_gen: KernelGroupGenerator) -> str:
+        if len(group_gen.group.get_shared_outer_loop_contexts()) == 0:
+            return group_gen.generate_no_iter_space_kernel_code()
+        else:
+            return group_gen.generate_cuda_kernel_call()
 
     def generate_cuda_kernels_code(self) -> str:
-        return "\n".join([group_gen.generate_cuda_kernel_code() for group_gen in self.kernel_group_generators])
+        return "\n".join([
+            group_gen.generate_cuda_kernel_code()
+            for group_gen in self.kernel_group_generators
+            if len(group_gen.group.get_shared_outer_loop_contexts()) > 0
+        ])
     

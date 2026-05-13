@@ -56,6 +56,9 @@ extern "C" {
         // 2. Copy inputs from Host (CPU) to Device (GPU)
         $CUDA_H2D_COPY$
 
+        // Declare local variables
+        $LOCAL_VAR_DECLS_IN_HOST_CODE$
+
         // 3. Launch the CUDA Kernels
         $KERNELS_LAUNCH$
 

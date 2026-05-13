@@ -16,7 +16,7 @@ class FullCodeGenerator:
         self.cuda_call_template = Template(path_to_templates / "cuda_call_template.cu")
         self.cuda_kernel_template = Template(path_to_templates / "single_cuda_kernel_template.cu")
 
-        self.host_params_generator = ParamsGenerator(kernels)
+        self.host_params_generator = ParamsGenerator(kernels, preceding_kernels=[])
         self.kernel_func_namer = KernelFuncNamer()
         self.cuda_mem_code_generator = CudaMemCodeGenerator(kernels)
         self.kernel_code_generator = CudaKernelGenerator(kernels)
@@ -40,8 +40,8 @@ class FullCodeGenerator:
         cuda_D2H_copy = self.cuda_mem_code_generator.generate_cuda_device_to_host_copy_code()
         self.cu_file_template.replace_placeholder("CUDA_D2H_COPY", cuda_D2H_copy, tabs=in_cpp_func_tabs)
 
-        cuda_deallocation = self.cuda_mem_code_generator.generate_cuda_dealloc_code()
-        self.cu_file_template.replace_placeholder("MEMORY_FREES", cuda_deallocation, tabs=in_cpp_func_tabs)
+        cuda_variables_decls = self.kernel_code_generator.generate_host_local_var_decls()
+        self.cu_file_template.replace_placeholder("LOCAL_VAR_DECLS_IN_HOST_CODE", cuda_variables_decls, tabs=in_cpp_func_tabs)
 
         kernel_calls = self.kernel_code_generator.generate_cuda_kernel_calls()
         self.cu_file_template.replace_placeholder("KERNELS_LAUNCH", kernel_calls, tabs=in_cpp_func_tabs)
@@ -49,6 +49,7 @@ class FullCodeGenerator:
         kernel_codes = self.kernel_code_generator.generate_cuda_kernels_code()
         self.cu_file_template.replace_placeholder("KERNEL_DEFINITIONS", kernel_codes, tabs=0)
 
-        print(f"Generated host parameters:\n{host_params}")
+        cuda_deallocation = self.cuda_mem_code_generator.generate_cuda_dealloc_code()
+        self.cu_file_template.replace_placeholder("MEMORY_FREES", cuda_deallocation, tabs=in_cpp_func_tabs)
+
         return self.cu_file_template.code
-        

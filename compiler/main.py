@@ -12,13 +12,14 @@ from compiler.kernels_finder import KernelFinder, SourceFilesCollection_FromFile
 from .fparser_tree_abstraction import FparserTree
 
 def main() -> None:
-    source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "gol_module.f90"
+    # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "gol_module.f90"
+    source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdv.f90"
 
     file_collector = SourceFilesCollection_FromFilesystem().load_file(str(source_file))
     kernel_finder = KernelFinder(file_collector)
 
     kernel_functions = kernel_finder.load_all_kernels()
-    gol: KernelFunctionDefinition = kernel_functions["second_gol_kernel"]
+    gol: KernelFunctionDefinition = kernel_functions["CDV"]
 
     for var in gol.local_context.variables:
         print(str(var))
@@ -75,6 +76,9 @@ def main() -> None:
     code = full_code_gen.generate_cuda_code()
     print(f"Generated CUDA code:\n{code}")
 
+    code_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "generated_code.cu"
+    with open(code_file, "w") as f:
+        f.write(code)
 
 if __name__ == "__main__":
     main()

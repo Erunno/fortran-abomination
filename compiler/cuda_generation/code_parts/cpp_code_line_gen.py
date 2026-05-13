@@ -10,8 +10,14 @@ class CppExprCodeGenerator(AstVisitor):
     def __init__(self, variable_name_generator=VariableNamer()):
         self.var_namer = variable_name_generator
 
-    def generate_cpp_code(self, kernel: Kernel) -> str:
-        code_lines = self._visit_all_code_lines_of(kernel)
+    def generate_cpp_code(self, kernels: Kernel | list[Kernel]) -> str:
+        if not isinstance(kernels, list):
+            kernels = [kernels]
+
+        code_lines = []
+        for k in kernels:
+            code_lines.extend(self._visit_all_code_lines_of(k))
+
         return "\n".join(code_lines)
     
     def generate_cpp_code_for_ast(self, ast, context) -> str:
@@ -49,7 +55,7 @@ class CppExprCodeGenerator(AstVisitor):
     def _visit_name(self, node, context) -> str:
         return self.var_namer.get_name(node, context)
     
-    @AstVisitor.accept("Level_2_Expr")
+    @AstVisitor.accept("Level_2_Expr", "Add_Operand")
     def _visit_level_2_expr(self, node, context) -> str:
         left_node, operator_node, right_node = node.children
 
@@ -59,10 +65,28 @@ class CppExprCodeGenerator(AstVisitor):
 
         return f"({left_str} {operator_str} {right_str})"
     
+    @AstVisitor.accept("Level_2_Unary_Expr")
+    def _visit_level_2_unary_expr(self, node, context) -> str:
+        operator_node, operand_node = node.children
+
+        operand_str = self._visit(operand_node, context)
+        operator_str = str(operator_node)
+
+        return f"({operator_str}{operand_str})"
+
+    @AstVisitor.accept("Parenthesis")
+    def _visit_parentheses(self, node, context) -> str:
+        expr_node = node.children[1]
+        expr_str = self._visit(expr_node, context)
+        return f"({expr_str})"
+
     @AstVisitor.accept(
         "Int_Literal_Constant",
         "Real_Literal_Constant")
     def _visit_int_literal_constant(self, node, context) -> str:
+        if FparserTree(node).is_type("Real_Literal_Constant"):
+            return str(node.children[0])
+        
         return str(node)
     
     @AstVisitor.accept("Intrinsic_Function_Reference")

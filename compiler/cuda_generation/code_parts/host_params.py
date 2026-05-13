@@ -1,12 +1,14 @@
 from compiler.context import DoLoopContext, IterationVariable, Variable
 from compiler.cuda_generation.code_parts.cpp_types_gen import CppTyper
 from compiler.cuda_generation.code_parts.variable_namer import VariableNamer
-from compiler.expression_walking.used_var import UsedVarsFinder
+from compiler.expression_walking.used_var import UsedVarsFinder, WriteVarsFinder
 from compiler.kernel_abstraction import Kernel
 
 class ParamsGenerator:
-    def __init__(self, kernels: list[Kernel]):
+    def __init__(self, kernels: list[Kernel], preceding_kernels: list[Kernel]):
         self.kernels = kernels
+        self.preceding_kernels = preceding_kernels
+        self.write_vars_finder = WriteVarsFinder()
         self.cpp_typer = CppTyper()
         self.variable_namer = VariableNamer()
 
@@ -16,7 +18,7 @@ class ParamsGenerator:
         return ",\n".join([self._get_param_code_for(var) for var in inout_vars])
     
     def generate_device_params_decl(self, outer_iter_space: list[DoLoopContext]) -> str:
-        para_vars = self._get_device_params_variables()
+        para_vars = self.get_device_params_variables()
         params_decl = ",\n".join([self._get_device_param_decl(var) for var in para_vars])
 
         if len(outer_iter_space) == 0:
@@ -28,7 +30,7 @@ class ParamsGenerator:
         return f"{params_decl},\n{iter_space_params_decl}"
 
     def generate_device_param_call(self, outer_iter_space: list[DoLoopContext]) -> str:
-        para_vars = self._get_device_params_variables()
+        para_vars = self.get_device_params_variables()
         params_call = ",\n".join([self._get_device_param_call_arg(var) for var in para_vars])
 
         if len(outer_iter_space) == 0:
@@ -96,9 +98,11 @@ class ParamsGenerator:
         
         return f"{var_name}, {', '.join(sizes)}"
     
-    def _get_device_params_variables(self) -> list[Variable]:
+    def get_device_params_variables(self) -> list[Variable]:
+        variables_written_to_by_preceding_kernels = self.write_vars_finder.find_variables_written_to(self.preceding_kernels)
+
         used_vars = UsedVarsFinder().find_used_vars(self.kernels)
-        used_vars = [var for var in used_vars if var.is_function_param()]
+        used_vars = [var for var in used_vars if var.is_function_param() or var in variables_written_to_by_preceding_kernels]
         used_vars.sort(key=lambda v: v.name())
 
         return list(set(used_vars))

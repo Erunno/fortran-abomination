@@ -50,3 +50,33 @@ class UsedSizesFinder(AstVisitor):
 
         actual_var = context.get_variable_by_name(arr_name)
         return [(actual_var, arg_num)]
+    
+@AstVisitor.use_visit_all_children_as_default()
+class WriteVarsFinder(AstVisitor):
+    def find_variables_written_to(self, kernels: Kernel | list[Kernel]) -> list[Variable]:
+        if not isinstance(kernels, list):
+            kernels = [kernels]
+
+        all_writes = []
+        for kernel in kernels:
+            writes = self._visit_all_code_lines_of(kernel, post_process='flatten')
+            all_writes.extend(writes)
+
+        return list(all_writes)
+
+    @AstVisitor.accept("Assignment_Stmt")
+    def _visit_assignment_stmt(self, node, context) -> list[Variable]:
+        lhs_node, _, _ = node.children
+        
+        var_name = None
+
+        if FparserTree(lhs_node).is_type("Name"):
+            var_name = str(lhs_node)
+        elif FparserTree(lhs_node).is_type("Part_Ref"):
+            name_ast, _ = lhs_node.children
+            var_name = str(name_ast)
+        else:
+            raise Exception(f"Unexpected LHS type in assignment statement: {FparserTree(lhs_node).tree.__class__.__name__}")
+
+        write_var = context.get_variable_by_name(var_name)
+        return [write_var]

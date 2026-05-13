@@ -5,6 +5,7 @@ from compiler.typing import TerminalType, Type
 class CppTyper:
     TYPE_TO_CPP_TYPE_STR = {
         "integer": "int",
+        "real(kind = knd)": "double"
     }
 
     def get_cpp_type_str(self, variable: Type) -> str:

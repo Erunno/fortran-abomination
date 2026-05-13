@@ -67,15 +67,18 @@ class FparserTree:
             return [FparserTree(child) for child in self.tree.children]
         else:
             return []
-        
+
+    def is_type(self, node_type: str) -> bool:
+        return self.tree.__class__.__name__.lower() == node_type.lower()
+
     def is_loop_definition(self) -> bool:
-        return self.tree.__class__.__name__.lower() == "Block_Nonlabel_Do_Construct".lower()
+        return self.is_type("Block_Nonlabel_Do_Construct")
 
     def is_comment(self) -> bool:
-        return self.tree.__class__.__name__.lower() == "Comment".lower()
+        return self.is_type("Comment")
 
     def is_call_statement(self) -> bool:
-        return self.tree.__class__.__name__.lower() == "Call_Stmt".lower()
+        return self.is_type("Call_Stmt")
 
     def get_node_in_chain_of_types(self, node_idxs: list[int | str]):
         if len(node_idxs) == 0:
