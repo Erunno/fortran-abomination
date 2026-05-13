@@ -45,11 +45,11 @@ __device__ __forceinline__ size_t F_IDX(Args... args) {
 
 __global__ 
 void kernel_group_1_device(
-    int vnz,
-    double zero,
     int vnx,
     double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int vny,
+    int vnz,
+    double zero,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -64,8 +64,8 @@ void kernel_group_1_device(
     }
 
     // Declarations of local variables used in the kernel body
-    int j;
     int k;
+    int j;
     int i;
 
     // Map the 1D index back to column-major multi-dimensional coordinates
@@ -74,11 +74,11 @@ void kernel_group_1_device(
         constexpr int i_step = 1;
     size_t current_idx = idx;
     
-    // Calculate index for 'k' dimension
-    int num_k = ((k_to - k_from + k_step) / k_step);
-    int local_k = current_idx % num_k;
-    k = k_from + local_k * k_step;
-    current_idx /= num_k;
+    // Calculate index for 'i' dimension
+    int num_i = ((i_to - i_from + i_step) / i_step);
+    int local_i = current_idx % num_i;
+    i = i_from + local_i * i_step;
+    current_idx /= num_i;
     
     // Calculate index for 'j' dimension
     int num_j = ((j_to - j_from + j_step) / j_step);
@@ -86,10 +86,10 @@ void kernel_group_1_device(
     j = j_from + local_j * j_step;
     current_idx /= num_j;
     
-    // Calculate index for 'i' dimension
-    int num_i = ((i_to - i_from + i_step) / i_step);
-    int local_i = current_idx;
-    i = i_from + local_i * i_step;
+    // Calculate index for 'k' dimension
+    int num_k = ((k_to - k_from + k_step) / k_step);
+    int local_k = current_idx;
+    k = k_from + local_k * k_step;
 
     // Perform the calculation
     v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] = zero;
@@ -98,16 +98,16 @@ void kernel_group_1_device(
 
 __global__ 
 void kernel_group_3_device(
-    int vnz,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-    double az,
-    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     int vnx,
     double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     double ax,
     int vny,
     double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
     double ay,
+    int vnz,
+    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    double az,
+    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -122,9 +122,9 @@ void kernel_group_3_device(
     }
 
     // Declarations of local variables used in the kernel body
-    int i;
     int j;
     int k;
+    int i;
 
     // Map the 1D index back to column-major multi-dimensional coordinates
     constexpr int k_step = 1;
@@ -132,11 +132,11 @@ void kernel_group_3_device(
         constexpr int i_step = 1;
     size_t current_idx = idx;
     
-    // Calculate index for 'k' dimension
-    int num_k = ((k_to - k_from + k_step) / k_step);
-    int local_k = current_idx % num_k;
-    k = k_from + local_k * k_step;
-    current_idx /= num_k;
+    // Calculate index for 'i' dimension
+    int num_i = ((i_to - i_from + i_step) / i_step);
+    int local_i = current_idx % num_i;
+    i = i_from + local_i * i_step;
+    current_idx /= num_i;
     
     // Calculate index for 'j' dimension
     int num_j = ((j_to - j_from + j_step) / j_step);
@@ -144,10 +144,10 @@ void kernel_group_3_device(
     j = j_from + local_j * j_step;
     current_idx /= num_j;
     
-    // Calculate index for 'i' dimension
-    int num_i = ((i_to - i_from + i_step) / i_step);
-    int local_i = current_idx;
-    i = i_from + local_i * i_step;
+    // Calculate index for 'k' dimension
+    int num_k = ((k_to - k_from + k_step) / k_step);
+    int local_k = current_idx;
+    k = k_from + local_k * k_step;
 
     // Perform the calculation
     v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] = (-(((((((ay * ((v[F_IDX(i, (j + 1), k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) * ((v[F_IDX(i, (j + 1), k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) - ((ay * ((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, (j - 1), k, v_dim1, v_dim2, v_dim3)]))) * ((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, (j - 1), k, v_dim1, v_dim2, v_dim3)]))))) + ((((ax * ((v[F_IDX((i + 1), j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) * ((u[F_IDX(i, (j + 1), k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)]))) - ((ax * ((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX((i - 1), j, k, v_dim1, v_dim2, v_dim3)]))) * ((u[F_IDX((i - 1), (j + 1), k, u_dim1, u_dim2, u_dim3)] + u[F_IDX((i - 1), j, k, u_dim1, u_dim2, u_dim3)])))))) + ((((az * ((v[F_IDX(i, j, (k + 1), v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) * ((w[F_IDX(i, (j + 1), k, w_dim1, w_dim2, w_dim3)] + w[F_IDX(i, j, k, w_dim1, w_dim2, w_dim3)]))) - ((az * ((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, (k - 1), v_dim1, v_dim2, v_dim3)]))) * ((w[F_IDX(i, (j + 1), (k - 1), w_dim1, w_dim2, w_dim3)] + w[F_IDX(i, j, (k - 1), w_dim1, w_dim2, w_dim3)]))))))));
@@ -156,16 +156,16 @@ void kernel_group_3_device(
 
 __global__ 
 void kernel_group_5_device(
-    int vnz,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-    double ay,
-    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-    double az,
     double ax,
     double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int vnx,
-    int vny,
+    double ay,
     double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+    int vny,
+    double az,
+    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    int vnz,
+    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -180,11 +180,11 @@ void kernel_group_5_device(
     }
 
     // Declarations of local variables used in the kernel body
+    double wadv;
     int i;
     int j;
-    double uadv;
     int k;
-    double wadv;
+    double uadv;
 
     // Map the 1D index back to column-major multi-dimensional coordinates
     constexpr int k_step = 1;
@@ -192,11 +192,11 @@ void kernel_group_5_device(
         constexpr int i_step = 1;
     size_t current_idx = idx;
     
-    // Calculate index for 'k' dimension
-    int num_k = ((k_to - k_from + k_step) / k_step);
-    int local_k = current_idx % num_k;
-    k = k_from + local_k * k_step;
-    current_idx /= num_k;
+    // Calculate index for 'i' dimension
+    int num_i = ((i_to - i_from + i_step) / i_step);
+    int local_i = current_idx % num_i;
+    i = i_from + local_i * i_step;
+    current_idx /= num_i;
     
     // Calculate index for 'j' dimension
     int num_j = ((j_to - j_from + j_step) / j_step);
@@ -204,10 +204,10 @@ void kernel_group_5_device(
     j = j_from + local_j * j_step;
     current_idx /= num_j;
     
-    // Calculate index for 'i' dimension
-    int num_i = ((i_to - i_from + i_step) / i_step);
-    int local_i = current_idx;
-    i = i_from + local_i * i_step;
+    // Calculate index for 'k' dimension
+    int num_k = ((k_to - k_from + k_step) / k_step);
+    int local_k = current_idx;
+    k = k_from + local_k * k_step;
 
     // Perform the calculation
     uadv = ((((u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, (j + 1), k, u_dim1, u_dim2, u_dim3)]) + u[F_IDX((i - 1), j, k, u_dim1, u_dim2, u_dim3)]) + u[F_IDX((i - 1), (j + 1), k, u_dim1, u_dim2, u_dim3)]));
@@ -218,11 +218,11 @@ void kernel_group_5_device(
 
 __global__ 
 void kernel_group_6_device(
-    int vnz,
-    double half,
     int vnx,
     double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int vny,
+    int vnz,
+    double half,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -238,8 +238,8 @@ void kernel_group_6_device(
 
     // Declarations of local variables used in the kernel body
     int k;
-    int i;
     int j;
+    int i;
 
     // Map the 1D index back to column-major multi-dimensional coordinates
     constexpr int k_step = 1;
@@ -247,11 +247,11 @@ void kernel_group_6_device(
         constexpr int i_step = 1;
     size_t current_idx = idx;
     
-    // Calculate index for 'k' dimension
-    int num_k = ((k_to - k_from + k_step) / k_step);
-    int local_k = current_idx % num_k;
-    k = k_from + local_k * k_step;
-    current_idx /= num_k;
+    // Calculate index for 'i' dimension
+    int num_i = ((i_to - i_from + i_step) / i_step);
+    int local_i = current_idx % num_i;
+    i = i_from + local_i * i_step;
+    current_idx /= num_i;
     
     // Calculate index for 'j' dimension
     int num_j = ((j_to - j_from + j_step) / j_step);
@@ -259,10 +259,10 @@ void kernel_group_6_device(
     j = j_from + local_j * j_step;
     current_idx /= num_j;
     
-    // Calculate index for 'i' dimension
-    int num_i = ((i_to - i_from + i_step) / i_step);
-    int local_i = current_idx;
-    i = i_from + local_i * i_step;
+    // Calculate index for 'k' dimension
+    int num_k = ((k_to - k_from + k_step) / k_step);
+    int local_k = current_idx;
+    k = k_from + local_k * k_step;
 
     // Perform the calculation
     v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] = (v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] * half);
@@ -273,7 +273,6 @@ void kernel_group_6_device(
 // The wrapper function called by Fortran
 extern "C" {
     void cpp_CDV(
-        int vnz,
         double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
         double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
         double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
@@ -282,7 +281,8 @@ extern "C" {
         double dymin,
         double dzmin,
         int vnx,
-        int vny
+        int vny,
+        int vnz
     ) {
         // 1. Allocate memory on the GPU (Device)
         double* v2_device; cudaMalloc(&v2_device, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3));
@@ -297,11 +297,11 @@ extern "C" {
         cudaMemcpy(w_device, w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaMemcpyHostToDevice);
 
         // Declare local variables
+        double zero;
+        double half;
         double ay;
         double ax;
-        double half;
         double az;
-        double zero;
 
         // 3. Launch the CUDA Kernels
         zero = 0.0;
@@ -326,11 +326,11 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_1_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnz,
-                zero,
                 vnx,
                 v2_device, v2_dim1, v2_dim2, v2_dim3,
                 vny,
+                vnz,
+                zero,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -360,16 +360,16 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_3_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnz,
-                v_device, v_dim1, v_dim2, v_dim3,
-                az,
-                w_device, w_dim1, w_dim2, w_dim3,
                 vnx,
                 v2_device, v2_dim1, v2_dim2, v2_dim3,
                 ax,
                 vny,
                 u_device, u_dim1, u_dim2, u_dim3,
                 ay,
+                vnz,
+                v_device, v_dim1, v_dim2, v_dim3,
+                az,
+                w_device, w_dim1, w_dim2, w_dim3,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -399,16 +399,16 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_5_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnz,
-                v_device, v_dim1, v_dim2, v_dim3,
-                ay,
-                w_device, w_dim1, w_dim2, w_dim3,
-                az,
                 ax,
                 v2_device, v2_dim1, v2_dim2, v2_dim3,
                 vnx,
-                vny,
+                ay,
                 u_device, u_dim1, u_dim2, u_dim3,
+                vny,
+                az,
+                v_device, v_dim1, v_dim2, v_dim3,
+                vnz,
+                w_device, w_dim1, w_dim2, w_dim3,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -435,11 +435,11 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_6_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnz,
-                half,
                 vnx,
                 v2_device, v2_dim1, v2_dim2, v2_dim3,
                 vny,
+                vnz,
+                half,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -452,9 +452,6 @@ extern "C" {
 
         // 5. Copy results back from Device (GPU) to Host (CPU)
         cudaMemcpy(v2, v2_device, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3), cudaMemcpyDeviceToHost);
-        cudaMemcpy(u, u_device, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaMemcpyDeviceToHost);
-        cudaMemcpy(v, v_device, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaMemcpyDeviceToHost);
-        cudaMemcpy(w, w_device, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaMemcpyDeviceToHost);
 
         // 6. Free the GPU memory
         cudaFree(v2_device);

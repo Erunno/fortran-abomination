@@ -8,13 +8,11 @@ contains
 
   ! kernel
   subroutine set(arr, val, Vnx, Vny, Vnz)
-    ! Standard assumed-shape array (defaults to 1-based)
     real(knd), contiguous, intent(out) :: arr(:,:,:)
     real(knd), intent(in) :: val
     integer, intent(in) :: Vnx, Vny, Vnz
     integer :: i, j, k
 
-    ! Shifted to start at 2 to leave index 1 for ghost cells
     do k = 2, Vnz + 1
       do j = 2, Vny + 1
         do i = 2, Vnx + 1

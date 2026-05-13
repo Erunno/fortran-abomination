@@ -3,18 +3,22 @@ from compiler.fparser_tree_abstraction import FparserTree, LoopStatement
 from compiler.typing import ArrayType, TerminalType
 
 class Variable:
-    def __init__(self, name, type, attributes=[]):
+    def __init__(self, name, type, attributes: str | list[str] = ""):
         self._name = name
         self._type = type
-        self.attributes = attributes
+        self.attributes: list[str] = attributes.split(",") if isinstance(attributes, str) else attributes
+        self.attributes = [attr.strip()
+                           for attr_item in self.attributes
+                           for attr in attr_item.split(",")]
+
         self._is_param = False
         self._suffix = ""
 
     def is_input(self):
-        return "intent(in)" in self.attributes
+        return "intent(in)" in self.attributes or "intent(inout)" in self.attributes
 
     def is_output(self):
-        return "intent(out)" in self.attributes
+        return "intent(out)" in self.attributes or "intent(inout)" in self.attributes
     
     def type(self) -> TerminalType | ArrayType:
         return self._type

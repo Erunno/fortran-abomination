@@ -29,7 +29,7 @@ class CudaMemCodeGenerator:
         def generate_cuda_free_for(var: Variable) -> str:
             array_name_device = self.var_namer.format_device_name(var)
             return f"cudaFree({array_name_device});"
-        
+
         return '\n'.join([generate_cuda_free_for(v) for v in self.all_used_arrays])
 
     def generate_cuda_host_to_device_copy_code(self) -> str:
@@ -53,8 +53,10 @@ class CudaMemCodeGenerator:
             return f"cudaMemcpy({array_name_host}, {array_name_device}, {total_bytes_expr}, cudaMemcpyDeviceToHost);"
 
         params_vars = [v for v in self.all_used_arrays if v.is_function_param()]
-        return '\n'.join([generate_cuda_d2h_copy_for(v) for v in params_vars])
-    
+        output_vars = [v for v in params_vars if v.is_output()]
+
+        return '\n'.join([generate_cuda_d2h_copy_for(v) for v in output_vars])
+
     def _get_all_used_arrays(self, kernels: list[Kernel]) -> list[Variable]:
         finder = UsedVarsFinder()
         used_vars: set[Variable] = set()

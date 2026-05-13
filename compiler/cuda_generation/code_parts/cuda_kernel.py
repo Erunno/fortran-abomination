@@ -171,6 +171,7 @@ class KernelGroupGenerator:
         
         all_indexing_vars = [ctx.get_iteration_variable() for ctx in self.group.get_shared_outer_loop_contexts()]
         indexing_vars_names = [self.variable_namer.format_iter_var_names(var) for var in all_indexing_vars]
+        indexing_vars_names = self._decide_best_indices_order(indexing_vars_names)
 
         # Adjusted for safe ceiling division assuming inclusive 'to' boundaries:
         # Number of iterations = (distance + step) / step
@@ -210,6 +211,11 @@ class KernelGroupGenerator:
 
         return "\n".join(code_lines)
 
+    def _decide_best_indices_order(self, loop_contexts: list[DoLoopContext]) -> list[DoLoopContext]:
+        # fortran is column-major
+        # so we want to iterate the innermost loop over the first dimension
+        # and the outermost loop over the last dimension
+        return list(reversed(loop_contexts))
 
 class CudaKernelGenerator:
     def __init__(self, kernels: list[Kernel]):
