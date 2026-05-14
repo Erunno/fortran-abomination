@@ -15,6 +15,7 @@ contains
     integer, intent(in) :: Vnx, Vny, Vnz
     integer :: i, j, k
 
+    !$OMP PARALLEL DO PRIVATE(i, j)
     do k = 2, Vnz + 1
       do j = 2, Vny + 1
         do i = 2, Vnx + 1
@@ -22,6 +23,7 @@ contains
         end do
       end do
     end do
+    !$OMP END PARALLEL DO
   end subroutine set
 
   ! kernel
@@ -31,6 +33,7 @@ contains
     integer, intent(in) :: Vnx, Vny, Vnz
     integer :: i, j, k
 
+    !$OMP PARALLEL DO PRIVATE(i, j)
     do k = 2, Vnz + 1
       do j = 2, Vny + 1
         do i = 2, Vnx + 1
@@ -38,6 +41,7 @@ contains
         end do
       end do
     end do
+    !$OMP END PARALLEL DO
   end subroutine multiply
 
   ! kernel
@@ -54,6 +58,7 @@ contains
     Ay = 0.25_knd / dymin
     Az = 0.25_knd / dzmin
     
+    !$OMP PARALLEL DO PRIVATE(i, j)
     do k = 2, Vnz + 1
       do j = 2, Vny + 1
         do i = 2, Vnx + 1
@@ -67,6 +72,7 @@ contains
         end do
       end do
     end do
+    !$OMP END PARALLEL DO
   end subroutine CDVdiv
 
   ! kernel
@@ -83,6 +89,7 @@ contains
     Ay = 0.5_knd / dymin
     Az = 0.125_knd / dzmin
     
+    !$OMP PARALLEL DO PRIVATE(i, j, Uadv, Wadv)
     do k = 2, Vnz + 1
       do j = 2, Vny + 1
         do i = 2, Vnx + 1
@@ -95,6 +102,7 @@ contains
         end do
       end do
     end do
+    !$OMP END PARALLEL DO
   end subroutine CDVadv
 
   ! ==========================================
