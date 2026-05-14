@@ -2,7 +2,7 @@
 module MomentumAdvection
   implicit none
   private
-  public CDV, knd
+  public CDV, knd, start_hot, finish_hot
 
   integer, parameter :: knd = kind(1.0d0)   ! double precision
 
@@ -131,5 +131,11 @@ contains
     call multiply(V2, half, Vnx, Vny, Vnz)
     
   end subroutine CDV
+
+  subroutine start_hot()
+  end subroutine start_hot
+
+  subroutine finish_hot()
+  end subroutine finish_hot
 
 end module MomentumAdvection

@@ -63,12 +63,16 @@ program cdv_benchmark
         call CDV(V2, U, V, W, dxmin, dymin, dzmin, NX, NY, NZ)
     end do
 
+    call start_hot()
+    
     ! ---- timed run ----
     call system_clock(t_start, count_rate)
     do iter = 1, NITER
         call CDV(V2, U, V, W, dxmin, dymin, dzmin, NX, NY, NZ)
     end do
     call system_clock(t_end)
+
+    call finish_hot()
 
     total_ms = real(t_end - t_start, kind=8) / real(count_rate, kind=8) * 1.0d3
 
