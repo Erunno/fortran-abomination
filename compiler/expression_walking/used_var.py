@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from compiler.context import Variable
 from compiler.expression_walking.visitor_base import AstVisitor
 from compiler.fparser_tree_abstraction import FparserTree

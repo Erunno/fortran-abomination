@@ -137,7 +137,7 @@ void measure_free(Fn&& fn) {
 }
 
 template <typename Fn>
-void measure_kernels_execution(Fn&& fn) {
+void measure_kernel_executions(Fn&& fn) {
     #ifndef MEASURE_CUDA_EXECUTION_TIME
     fn(); return;
     #endif

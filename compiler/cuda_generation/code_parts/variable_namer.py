@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 from compiler.cuda_generation.code_parts.cpp_types_gen import CppTyper
 from compiler.debugging.color_printer import Colors as c
 from compiler.context import Context, Variable

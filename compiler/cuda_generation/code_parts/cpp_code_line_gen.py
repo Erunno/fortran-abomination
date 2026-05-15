@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from compiler.context import Context
 from compiler.cuda_generation.code_parts.variable_namer import VariableNamer
 from compiler.debugging.color_printer import Colors as c

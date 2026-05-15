@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Generator
 
 from compiler.context import Context, ContextWithArguments, DoLoopContext, LocalContext, Variable

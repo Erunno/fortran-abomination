@@ -31,14 +31,21 @@ class FullCodeGenerator:
         host_params = self.host_params_generator.generate_host_params()
         self.cu_file_template.replace_placeholder("HOST_PARAMETERS", host_params, tabs=in_cpp_func_tabs)
 
-        cuda_allocation = self.cuda_mem_code_generator.generate_cuda_alloc_code()
+        device_buff_decls, cuda_allocation = self.cuda_mem_code_generator.generate_cuda_alloc_code()
+        self.cu_file_template.replace_placeholder("DEVICE_BUFF_DECLS", device_buff_decls, tabs=in_cpp_func_tabs)
         self.cu_file_template.replace_placeholder("MEMORY_ALLOCATIONS", cuda_allocation, tabs=in_cpp_func_tabs)
 
         cuda_H2D_copy = self.cuda_mem_code_generator.generate_cuda_host_to_device_copy_code()
         self.cu_file_template.replace_placeholder("CUDA_H2D_COPY", cuda_H2D_copy, tabs=in_cpp_func_tabs)
 
+        total_h2d_size_calculation = self.cuda_mem_code_generator.generate_total_h2d_size_calculation()
+        self.cu_file_template.replace_placeholder("TOTAL_H2D_SIZE_CALCULATION", total_h2d_size_calculation)
+
         cuda_D2H_copy = self.cuda_mem_code_generator.generate_cuda_device_to_host_copy_code()
         self.cu_file_template.replace_placeholder("CUDA_D2H_COPY", cuda_D2H_copy, tabs=in_cpp_func_tabs)
+
+        total_d2h_size_calculation = self.cuda_mem_code_generator.generate_total_d2h_size_calculation()
+        self.cu_file_template.replace_placeholder("TOTAL_D2H_SIZE_CALCULATION", total_d2h_size_calculation)
 
         cuda_variables_decls = self.kernel_code_generator.generate_host_local_var_decls()
         self.cu_file_template.replace_placeholder("LOCAL_VAR_DECLS_IN_HOST_CODE", cuda_variables_decls, tabs=in_cpp_func_tabs)

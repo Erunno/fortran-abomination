@@ -1,6 +1,5 @@
+from __future__ import annotations
 from decimal import Context
-from tkinter import Variable
-
 
 class FparserTree:
     def __init__(self, tree):

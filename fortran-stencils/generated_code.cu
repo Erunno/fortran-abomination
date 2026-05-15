@@ -2,54 +2,21 @@
 #include <cstddef>
 #include <iostream>
 
+#define MEASURE_CUDA_EXECUTION_TIME
+#include "common_functions.cuh"
+
+using namespace generated_kernels::indexing;
+using namespace generated_kernels::timing;
+
 namespace generated_kernels {
-
-template <size_t Step, size_t N>
-struct StaticLoop {
-    __device__ __forceinline__ static void iterate(const size_t* arr, size_t& linear_idx, size_t& stride) {
-        size_t current_index = arr[Step] - 1;
-        size_t current_dim_size = arr[Step + N];
-
-        linear_idx += current_index * stride;
-        stride *= current_dim_size;
-
-        StaticLoop<Step + 1, N>::iterate(arr, linear_idx, stride);
-    }
-};
-
-template <size_t N>
-struct StaticLoop<N, N> {
-    __device__ __forceinline__ static void iterate(const size_t* arr, size_t& linear_idx, size_t& stride) {
-        // Do nothing. The loop is finished.
-    }
-};
-
-template <typename... Args>
-__device__ __forceinline__ size_t F_IDX(Args... args) {
-    constexpr size_t total_args = sizeof...(Args);
-    
-    static_assert(total_args % 2 == 0, "IDX requires N indices followed by N dimensions.");
-    static_assert(total_args > 0, "IDX requires at least 2 arguments.");
-    
-    constexpr size_t N = total_args / 2;
-
-    const size_t arr[total_args] = { static_cast<size_t>(args)... };
-
-    size_t linear_idx = 0;
-    size_t stride = 1;
-
-    StaticLoop<0, N>::iterate(arr, linear_idx, stride);
-
-    return linear_idx;
-}
 
 __global__ 
 void kernel_group_1_device(
-    int vnx,
+    double zero,
     double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int vny,
     int vnz,
-    double zero,
+    int vnx,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -98,16 +65,16 @@ void kernel_group_1_device(
 
 __global__ 
 void kernel_group_3_device(
-    int vnx,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-    double ax,
-    int vny,
     double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     double ay,
-    int vnz,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    int vny,
     double az,
+    int vnz,
+    double ax,
+    int vnx,
     double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -156,16 +123,16 @@ void kernel_group_3_device(
 
 __global__ 
 void kernel_group_5_device(
-    double ax,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-    int vnx,
-    double ay,
     double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int vny,
     double az,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    double ax,
     int vnz,
+    int vnx,
     double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+    double ay,
+    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -181,9 +148,9 @@ void kernel_group_5_device(
 
     // Declarations of local variables used in the kernel body
     double wadv;
+    int k;
     int i;
     int j;
-    int k;
     double uadv;
 
     // Map the 1D index back to column-major multi-dimensional coordinates
@@ -218,11 +185,11 @@ void kernel_group_5_device(
 
 __global__ 
 void kernel_group_6_device(
-    int vnx,
     double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int vny,
-    int vnz,
     double half,
+    int vnz,
+    int vnx,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -237,9 +204,9 @@ void kernel_group_6_device(
     }
 
     // Declarations of local variables used in the kernel body
+    int i;
     int k;
     int j;
-    int i;
 
     // Map the 1D index back to column-major multi-dimensional coordinates
     constexpr int k_step = 1;
@@ -272,38 +239,58 @@ void kernel_group_6_device(
 
 // The wrapper function called by Fortran
 extern "C" {
+    void cpp_start_hot() {
+        reset_timing_vectors();
+    }
+
+    void cpp_finish_hot() {
+        print_timing_summary();
+    }
+
     void cpp_CDV(
         double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-        double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-        double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-        double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-        double dxmin,
         double dymin,
         double dzmin,
+        double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
         int vnx,
+        double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
         int vny,
-        int vnz
+        int vnz,
+        double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+        double dxmin
     ) {
         // 1. Allocate memory on the GPU (Device)
-        double* v2_device; cudaMalloc(&v2_device, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3));
-        double* u_device; cudaMalloc(&u_device, (sizeof(double) * u_dim1 * u_dim2 * u_dim3));
-        double* v_device; cudaMalloc(&v_device, (sizeof(double) * v_dim1 * v_dim2 * v_dim3));
-        double* w_device; cudaMalloc(&w_device, (sizeof(double) * w_dim1 * w_dim2 * w_dim3));
+        double* v2_device;
+        double* u_device;
+        double* v_device;
+        double* w_device;
+
+        measure_alloc([&]() {
+        cudaMalloc(&v2_device, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3));
+        cudaMalloc(&u_device, (sizeof(double) * u_dim1 * u_dim2 * u_dim3));
+        cudaMalloc(&v_device, (sizeof(double) * v_dim1 * v_dim2 * v_dim3));
+        cudaMalloc(&w_device, (sizeof(double) * w_dim1 * w_dim2 * w_dim3));
+        });
+
+        size_t total_h2d_bytes = (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3) + (sizeof(double) * u_dim1 * u_dim2 * u_dim3) + (sizeof(double) * v_dim1 * v_dim2 * v_dim3) + (sizeof(double) * w_dim1 * w_dim2 * w_dim3);
 
         // 2. Copy inputs from Host (CPU) to Device (GPU)
+        measure_h2d(total_h2d_bytes, [&]() {
         cudaMemcpy(v2_device, v2, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3), cudaMemcpyHostToDevice);
         cudaMemcpy(u_device, u, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaMemcpyHostToDevice);
         cudaMemcpy(v_device, v, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaMemcpyHostToDevice);
         cudaMemcpy(w_device, w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaMemcpyHostToDevice);
+        });
 
         // Declare local variables
-        double az;
         double half;
-        double ax;
+        double az;
         double ay;
         double zero;
+        double ax;
 
         // 3. Launch the CUDA Kernels
+        measure_kernel_executions([&]() {
         zero = 0.0;
         half = 0.5;
         {
@@ -326,11 +313,11 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_1_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnx,
+                zero,
                 v2_device, v2_dim1, v2_dim2, v2_dim3,
                 vny,
                 vnz,
-                zero,
+                vnx,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -360,16 +347,16 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_3_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnx,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
-                ax,
-                vny,
                 u_device, u_dim1, u_dim2, u_dim3,
+                v2_device, v2_dim1, v2_dim2, v2_dim3,
                 ay,
-                vnz,
-                v_device, v_dim1, v_dim2, v_dim3,
+                vny,
                 az,
+                vnz,
+                ax,
+                vnx,
                 w_device, w_dim1, w_dim2, w_dim3,
+                v_device, v_dim1, v_dim2, v_dim3,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -399,16 +386,16 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_5_device<<<blocksPerGrid, threadsPerBlock>>>(
-                ax,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
-                vnx,
-                ay,
                 u_device, u_dim1, u_dim2, u_dim3,
+                v2_device, v2_dim1, v2_dim2, v2_dim3,
                 vny,
                 az,
-                v_device, v_dim1, v_dim2, v_dim3,
+                ax,
                 vnz,
+                vnx,
                 w_device, w_dim1, w_dim2, w_dim3,
+                ay,
+                v_device, v_dim1, v_dim2, v_dim3,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -435,29 +422,37 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_6_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnx,
                 v2_device, v2_dim1, v2_dim2, v2_dim3,
                 vny,
-                vnz,
                 half,
+                vnz,
+                vnx,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
                 total_elements
             );
         }
+        });
 
         // Wait for GPU to finish
         cudaDeviceSynchronize();
 
+        size_t total_d2h_bytes = (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3);
+
         // 5. Copy results back from Device (GPU) to Host (CPU)
+        measure_d2h(total_d2h_bytes, [&]() {
         cudaMemcpy(v2, v2_device, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3), cudaMemcpyDeviceToHost);
+        });
+
 
         // 6. Free the GPU memory
+        measure_free([&]() {
         cudaFree(v2_device);
         cudaFree(u_device);
         cudaFree(v_device);
         cudaFree(w_device);
+        });
     }
 }
 }

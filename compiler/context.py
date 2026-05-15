@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from compiler.debugging.color_printer import Colors as c
 from compiler.fparser_tree_abstraction import FparserTree, LoopStatement
 from compiler.typing import ArrayType, TerminalType
