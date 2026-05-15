@@ -1,5 +1,5 @@
 from compiler.context import DoLoopContext, IterationVariable, Variable
-from compiler.cuda_generation.code_parts.cpp_types_gen import CppTyper
+from compiler.cuda_generation.code_parts.cpp_types_gen import CppTyper, FortranTyper
 from compiler.cuda_generation.code_parts.variable_namer import VariableNamer
 from compiler.expression_walking.used_var import UsedVarsFinder, WriteVarsFinder
 from compiler.kernel_abstraction import Kernel
@@ -10,13 +10,34 @@ class ParamsGenerator:
         self.preceding_kernels = preceding_kernels
         self.write_vars_finder = WriteVarsFinder()
         self.cpp_typer = CppTyper()
+        self.fortran_typer = FortranTyper()
         self.variable_namer = VariableNamer()
 
     def generate_host_params(self) -> str:
         used_vars = UsedVarsFinder().find_used_vars(self.kernels)
         inout_vars = [var for var in used_vars if var.is_function_param()]
-        return ",\n".join([self._get_param_code_for(var) for var in inout_vars])
+        return ", &\n".join([self._get_cpp_param_code_for(var) for var in inout_vars])
     
+    def generate_fortran_interface_dummies(self) -> str:
+        used_vars = UsedVarsFinder().find_used_vars(self.kernels)
+        inout_vars = [var for var in used_vars if var.is_function_param()]
+        fortran_params = [self._get_fortran_params_from(var) for var in inout_vars]
+        
+        dummy_lines = [', '.join([param.name for param in params]) for params in fortran_params]
+        return ', &\n'.join(dummy_lines)
+
+    def generate_fortran_interface_decls(self) -> str:
+        used_vars = UsedVarsFinder().find_used_vars(self.kernels)
+        inout_vars = [var for var in used_vars if var.is_function_param()]
+        fortran_params = [self._get_fortran_params_from(var) for var in inout_vars]
+
+        decl_lines = []
+        for params in fortran_params:
+            for param in params:
+                decl_lines.append(f"{param.type_str} :: {param.name}")
+        
+        return '\n'.join(decl_lines)
+
     def generate_device_params_decl(self, outer_iter_space: list[DoLoopContext]) -> str:
         para_vars = self.get_device_params_variables()
         params_decl = ",\n".join([self._get_device_param_decl(var) for var in para_vars])
@@ -107,7 +128,7 @@ class ParamsGenerator:
 
         return list(set(used_vars))
 
-    def _get_param_code_for(self, var: Variable) -> str:
+    def _get_cpp_param_code_for(self, var: Variable) -> str:
         cpp_type_str = self.cpp_typer.get_cpp_type_str(var.type())
         dim = var.type().get_dim_count()
 
@@ -120,6 +141,27 @@ class ParamsGenerator:
         
         return f"{var_decl}, {dim_vars_decls}"
     
+    class FortranParamInfo:
+        def __init__(self, type_str: str, name: str):
+            self.type_str = type_str
+            self.name = name
+
+    def _get_fortran_params_from(self, var: Variable) -> list["ParamsGenerator.FortranParamInfo"]:
+        fortran_type_str = self.fortran_typer.get_fortran_type_for_cpp_bind(var.type())
+        var_name = self.variable_namer.format_name(var)
+        dim_count = var.type().get_dim_count()
+
+        params = [self.FortranParamInfo(fortran_type_str, var_name)]
+
+        size_t = self.fortran_typer.get_size_t_cpp_bind()
+        dim_size_infos = []
+        for dim_num in range(dim_count):
+            size_var_name = self.variable_namer.format_array_dim_size_variable_name(var, dim_num)
+            dim_size_infos.append(self.FortranParamInfo(size_t, size_var_name))
+
+        return params + dim_size_infos
+
+
     def _get_sizes_param_code_for(self, var: Variable) -> str:
         size_t = self.cpp_typer.get_size_t()
         dim = var.type().get_dim_count()

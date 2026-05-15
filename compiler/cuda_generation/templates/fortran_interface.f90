@@ -1,4 +1,3 @@
-! kernels
 module $MODULE_NAME$
   use iso_c_binding, only: c_double, c_int, c_size_t, c_ptr, c_loc
   implicit none
@@ -9,10 +8,10 @@ module $MODULE_NAME$
 
   interface
     subroutine cpp_$KERNEL_NAME$( &
-        $FORTRAN_KERNEL_ARGS_DUMMY$
+        $FORTRAN_INTERFACE_DUMMY$ &
         ) bind(C, name='cpp_$KERNEL_NAME$')
       import :: c_double, c_int, c_size_t, c_ptr
-      $FORTRAN_KERNEL_ARGS_TYPES_AND_ATTRS$
+      $FORTRAN_INTERFACE_DECLS$
     end subroutine cpp_$KERNEL_NAME$
 
     subroutine cpp_start_hot() bind(C, name='cpp_start_hot')

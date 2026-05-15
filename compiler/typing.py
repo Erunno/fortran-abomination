@@ -9,6 +9,9 @@ class Type:
     def is_array(self):
         return self.get_dim_count() != 0
 
+    def get_underlying_type(self):
+        raise NotImplementedError()
+
 class TerminalType(Type):
     def __init__(self, name):
         self.name = name

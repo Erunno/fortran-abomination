@@ -76,9 +76,16 @@ def main() -> None:
     code = full_code_gen.generate_cuda_code()
     print(f"Generated CUDA code:\n{code}")
 
+    fortran_interface_code = full_code_gen.generate_fortran_interface_code()
+    print(f"Generated Fortran interface code:\n{fortran_interface_code}")
+
     code_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "generated_code.cu"
     with open(code_file, "w") as f:
         f.write(code)
+
+    fotran_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "generated_interface.f90"
+    with open(fotran_file, "w") as f:
+        f.write(fortran_interface_code)
 
 if __name__ == "__main__":
     main()
