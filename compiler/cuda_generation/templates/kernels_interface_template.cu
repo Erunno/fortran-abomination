@@ -48,7 +48,7 @@ extern "C" {
         });
 
         // Wait for GPU to finish
-        cudaDeviceSynchronize();
+        CUCH(cudaDeviceSynchronize());
 
         size_t total_d2h_bytes = $TOTAL_D2H_SIZE_CALCULATION$;
 

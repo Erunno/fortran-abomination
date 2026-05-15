@@ -20,7 +20,7 @@ class CudaMemCodeGenerator:
             total_bytes_expr = self._get_total_byte_count_of(var)
 
             var_declaration = f"{type_name} {array_name_device};"
-            malloc_call = f"cudaMalloc(&{array_name_device}, {total_bytes_expr});"
+            malloc_call = f"CUCH(cudaMalloc(&{array_name_device}, {total_bytes_expr}));"
             return (var_declaration, malloc_call)
 
         used_buffers = [generate_cuda_malloc_for(v) for v in self.all_used_arrays]
@@ -33,7 +33,7 @@ class CudaMemCodeGenerator:
     def generate_cuda_dealloc_code(self) -> str:
         def generate_cuda_free_for(var: Variable) -> str:
             array_name_device = self.var_namer.format_device_name(var)
-            return f"cudaFree({array_name_device});"
+            return f"CUCH(cudaFree({array_name_device}));"
 
         return '\n'.join([generate_cuda_free_for(v) for v in self.all_used_arrays])
 
@@ -44,7 +44,7 @@ class CudaMemCodeGenerator:
 
             total_bytes_expr = self._get_total_byte_count_of(var)
 
-            return f"cudaMemcpy({array_name_device}, {array_name_host}, {total_bytes_expr}, cudaMemcpyHostToDevice);"
+            return f"CUCH(cudaMemcpy({array_name_device}, {array_name_host}, {total_bytes_expr}, cudaMemcpyHostToDevice));"
 
         return '\n'.join([generate_cuda_h2d_copy_for(v) for v in self.all_used_arrays])
     
@@ -55,7 +55,7 @@ class CudaMemCodeGenerator:
 
             total_bytes_expr = self._get_total_byte_count_of(var)
 
-            return f"cudaMemcpy({array_name_host}, {array_name_device}, {total_bytes_expr}, cudaMemcpyDeviceToHost);"
+            return f"CUCH(cudaMemcpy({array_name_host}, {array_name_device}, {total_bytes_expr}, cudaMemcpyDeviceToHost));"
 
         params_vars = [v for v in self.all_used_arrays if v.is_function_param()]
         output_vars = [v for v in params_vars if v.is_output()]

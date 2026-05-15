@@ -14,4 +14,6 @@
         $KERNEL_ARGS$,
         total_elements
     );
+
+    CUCH(cudaGetLastError());
 }
