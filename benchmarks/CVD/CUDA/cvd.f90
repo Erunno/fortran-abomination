@@ -26,6 +26,12 @@ module MomentumAdvection
       real(c_double), value, intent(in) :: dxmin, dymin, dzmin
       integer(c_int), value, intent(in) :: vnx, vny, vnz
     end subroutine cpp_CDV
+
+    subroutine cpp_start_hot() bind(C, name='cpp_start_hot')
+    end subroutine cpp_start_hot
+
+    subroutine cpp_finish_hot() bind(C, name='cpp_finish_hot')
+    end subroutine cpp_finish_hot
   end interface
 
 contains
@@ -51,9 +57,11 @@ contains
   end subroutine CDV
 
   subroutine start_hot()
+    call cpp_start_hot()
   end subroutine start_hot
 
   subroutine finish_hot()
+    call cpp_finish_hot()
   end subroutine finish_hot
 
 end module MomentumAdvection
