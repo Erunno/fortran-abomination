@@ -67,8 +67,9 @@ $(CASE_OBJ): $(CASE)/$(VARIANT)/$(CASE_SRC) | $(BINDIR)
 	$(FC) $(ALL_FFLAGS) $(DEFINES) -J $(BINDIR) -I$(BINDIR) -c $< -o $@
 
 # Compile any extra CUDA sources (.cu files listed in CASE_CUDA_EXTRA)
+# -I$(CURDIR)/common makes the shared common_functions.cuh visible to all cases
 $(BINDIR)/%.o: $(CASE)/$(VARIANT)/%.cu | $(BINDIR)
-	$(NVCC) $(NVCCFLAGS) -c $< -o $@
+	$(NVCC) $(NVCCFLAGS) -I$(CURDIR)/common -c $< -o $@
 
 # Compile the benchmark driver (main.f90 in the CASE directory)
 $(MAIN_OBJ): $(CASE)/main.f90 $(CASE_OBJ)
