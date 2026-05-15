@@ -1,0 +1,1 @@
+function;variant;rounds;grid_x;grid_y;grid_z;iters;warmup_iters;warmup_turns;cuda_malloc_ms;cuda_h2d_ms;cuda_h2d_gbps;cuda_kernel_run;cuda_d2h_ms;cuda_d2h_gbps;cuda_free_ms;total_ms
