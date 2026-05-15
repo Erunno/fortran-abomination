@@ -1,4 +1,4 @@
-module generated_kernels
+module MomentumAdvection
   use iso_c_binding, only: c_double, c_int, c_size_t, c_ptr, c_loc
   implicit none
   private
@@ -19,7 +19,7 @@ module generated_kernels
             dymin, &
             dzmin &
         ) bind(C, name='cpp_CDV')
-      import :: c_double, c_int, c_size_t, c_ptr
+      import :: c_double, c_int, c_size_t, c_ptr, knd
         real(kind = knd), dimension(*) :: u
         integer(c_size_t), value, intent(in) :: u_dim1
         integer(c_size_t), value, intent(in) :: u_dim2
@@ -67,7 +67,7 @@ contains
         dzmin, &
         vnx, &
         vny, &
-        vnz
+        vnz &
     )
         real(kind = knd), dimension(:,:,:), intent(out) :: v2
         real(kind = knd), dimension(:,:,:), intent(in) :: u
@@ -90,7 +90,7 @@ contains
         w, int(size(w, 1), kind=c_size_t), int(size(w, 2), kind=c_size_t), int(size(w, 3), kind=c_size_t), &
         real(dxmin, kind=c_double), &
         real(dymin, kind=c_double), &
-        real(dzmin, kind=c_double)
+        real(dzmin, kind=c_double) &
     )
     
   end subroutine CDV
@@ -103,4 +103,4 @@ contains
     call cpp_finish_hot()
   end subroutine finish_hot
 
-end module generated_kernels
+end module MomentumAdvection

@@ -20,13 +20,12 @@ class FullCodeGenerator:
 
         self.fortran_generator = FortranInterfaceGenerator(kernels, entry_kernel_func)
 
-        self.function_name = entry_kernel_func.name()
-
+        self.entry_kernel_func = entry_kernel_func
 
     def generate_cuda_code(self) -> str:
         cu_file_template = Template(self.cu_file_template_path)
 
-        cu_file_template.replace_placeholder("KERNEL_NAME", self.function_name, tabs=0)
+        cu_file_template.replace_placeholder("KERNEL_NAME", self.entry_kernel_func.name(), tabs=0)
 
         in_cpp_func_tabs = 2
         host_params = self.host_params_generator.generate_host_params()
@@ -65,8 +64,11 @@ class FullCodeGenerator:
     def generate_fortran_interface_code(self) -> str:
         fortran_interface_template = Template(Path(__file__).resolve().parent / "templates" / "fortran_interface.f90")
 
-        fortran_interface_template.replace_placeholder("MODULE_NAME", "generated_kernels", tabs=0)
-        fortran_interface_template.replace_placeholder("KERNEL_NAME", self.function_name, tabs=0)
+
+        function_name = self.entry_kernel_func.name()
+        module_name = self.entry_kernel_func.get_module_name()
+        fortran_interface_template.replace_placeholder("MODULE_NAME", module_name, tabs=0)
+        fortran_interface_template.replace_placeholder("KERNEL_NAME", function_name, tabs=0)
 
         fortran_interface_dummy = self.fortran_generator.generate_interface_dummies()
         fortran_interface_template.replace_placeholder("FORTRAN_INTERFACE_DUMMY", fortran_interface_dummy, tabs=3)

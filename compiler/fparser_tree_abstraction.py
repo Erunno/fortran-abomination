@@ -8,6 +8,18 @@ class FparserTree:
 
         self.tree = tree
 
+    def get_first_parent_of_type(self, node_type: str) -> FparserTree | None:
+        current_node = self.tree
+
+        while current_node is not None:
+            if FparserTree(current_node).is_type(node_type):
+                return FparserTree(current_node)
+            
+            if not hasattr(current_node, "parent"):
+                return None
+            
+            current_node = current_node.parent
+
     def get_all_nodes_of_type(self, node_type: str) -> list:
         def add_if_node_is_of_type(node, acc):
             if node_type.lower() == node.__class__.__name__.lower():

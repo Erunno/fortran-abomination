@@ -10,7 +10,7 @@ module $MODULE_NAME$
     subroutine cpp_$KERNEL_NAME$( &
         $FORTRAN_INTERFACE_DUMMY$ &
         ) bind(C, name='cpp_$KERNEL_NAME$')
-      import :: c_double, c_int, c_size_t, c_ptr
+      import :: c_double, c_int, c_size_t, c_ptr, knd
       $FORTRAN_INTERFACE_DECLS$
     end subroutine cpp_$KERNEL_NAME$
 
@@ -28,12 +28,12 @@ contains
   ! ==========================================
 
   subroutine $KERNEL_NAME$( &
-        $ORIGINAL_FORTRAN_FUNC_DUMMY$
+        $ORIGINAL_FORTRAN_FUNC_DUMMY$ &
     )
     $FORTRAN_KERNEL_ARGS_DECLS$
 
     call cpp_$KERNEL_NAME$( &
-        $FORTRAN_CPP_KERNEL_ARGS_CALL$
+        $FORTRAN_CPP_KERNEL_ARGS_CALL$ &
     )
     
   end subroutine $KERNEL_NAME$

@@ -1,4 +1,3 @@
-! kernels
 module MomentumAdvection
   use iso_c_binding, only: c_double, c_int, c_size_t, c_ptr, c_loc
   implicit none
@@ -9,22 +8,40 @@ module MomentumAdvection
 
   interface
     subroutine cpp_CDV( &
-      v2, v2_dim1, v2_dim2, v2_dim3, &
-      u, u_dim1, u_dim2, u_dim3, &
-      v, v_dim1, v_dim2, v_dim3, &
-      w, w_dim1, w_dim2, w_dim3, &
-      dxmin, dymin, dzmin, vnx, vny, vnz) bind(C, name='cpp_CDV')
-      import :: c_double, c_int, c_size_t, c_ptr
-      type(c_ptr), value, intent(in) :: v2
-      integer(c_size_t), value, intent(in) :: v2_dim1, v2_dim2, v2_dim3
-      type(c_ptr), value, intent(in) :: u
-      integer(c_size_t), value, intent(in) :: u_dim1, u_dim2, u_dim3
-      type(c_ptr), value, intent(in) :: v
-      integer(c_size_t), value, intent(in) :: v_dim1, v_dim2, v_dim3
-      type(c_ptr), value, intent(in) :: w
-      integer(c_size_t), value, intent(in) :: w_dim1, w_dim2, w_dim3
-      real(c_double), value, intent(in) :: dxmin, dymin, dzmin
-      integer(c_int), value, intent(in) :: vnx, vny, vnz
+            u, u_dim1, u_dim2, u_dim3, &
+            v, v_dim1, v_dim2, v_dim3, &
+            v2, v2_dim1, v2_dim2, v2_dim3, &
+            vnx, &
+            vny, &
+            vnz, &
+            w, w_dim1, w_dim2, w_dim3, &
+            dxmin, &
+            dymin, &
+            dzmin &
+        ) bind(C, name='cpp_CDV')
+      import :: c_double, c_int, c_size_t, c_ptr, knd
+        real(kind = knd), dimension(*) :: u
+        integer(c_size_t), value, intent(in) :: u_dim1
+        integer(c_size_t), value, intent(in) :: u_dim2
+        integer(c_size_t), value, intent(in) :: u_dim3
+        real(kind = knd), dimension(*) :: v
+        integer(c_size_t), value, intent(in) :: v_dim1
+        integer(c_size_t), value, intent(in) :: v_dim2
+        integer(c_size_t), value, intent(in) :: v_dim3
+        real(kind = knd), dimension(*) :: v2
+        integer(c_size_t), value, intent(in) :: v2_dim1
+        integer(c_size_t), value, intent(in) :: v2_dim2
+        integer(c_size_t), value, intent(in) :: v2_dim3
+        integer(c_int), value, intent(in) :: vnx
+        integer(c_int), value, intent(in) :: vny
+        integer(c_int), value, intent(in) :: vnz
+        real(kind = knd), dimension(*) :: w
+        integer(c_size_t), value, intent(in) :: w_dim1
+        integer(c_size_t), value, intent(in) :: w_dim2
+        integer(c_size_t), value, intent(in) :: w_dim3
+        real(kind = knd), value, intent(in) :: dxmin
+        real(kind = knd), value, intent(in) :: dymin
+        real(kind = knd), value, intent(in) :: dzmin
     end subroutine cpp_CDV
 
     subroutine cpp_start_hot() bind(C, name='cpp_start_hot')
@@ -40,19 +57,41 @@ contains
   ! Main Entry Point
   ! ==========================================
 
-  ! kernel
-  subroutine CDV(V2, U, V, W, dxmin, dymin, dzmin, Vnx, Vny, Vnz)
-    real(knd), contiguous, target, intent(out) :: V2(:,:,:)
-    real(knd), contiguous, target, intent(in)  :: U(:,:,:), V(:,:,:), W(:,:,:)
-    real(knd), intent(in) :: dxmin, dymin, dzmin
-    integer, intent(in) :: Vnx, Vny, Vnz
+  subroutine CDV( &
+        v2, &
+        u, &
+        v, &
+        w, &
+        dxmin, &
+        dymin, &
+        dzmin, &
+        vnx, &
+        vny, &
+        vnz &
+    )
+        real(kind = knd), dimension(:,:,:), intent(out) :: v2
+        real(kind = knd), dimension(:,:,:), intent(in) :: u
+        real(kind = knd), dimension(:,:,:), intent(in) :: v
+        real(kind = knd), dimension(:,:,:), intent(in) :: w
+        real(kind = knd), intent(in) :: dxmin
+        real(kind = knd), intent(in) :: dymin
+        real(kind = knd), intent(in) :: dzmin
+        integer(c_int), intent(in) :: vnx
+        integer(c_int), intent(in) :: vny
+        integer(c_int), intent(in) :: vnz
 
     call cpp_CDV( &
-      c_loc(V2(1,1,1)), int(size(V2,1), c_size_t), int(size(V2,2), c_size_t), int(size(V2,3), c_size_t), &
-      c_loc(U(1,1,1)),  int(size(U,1),  c_size_t), int(size(U,2),  c_size_t), int(size(U,3),  c_size_t), &
-      c_loc(V(1,1,1)),  int(size(V,1),  c_size_t), int(size(V,2),  c_size_t), int(size(V,3),  c_size_t), &
-      c_loc(W(1,1,1)),  int(size(W,1),  c_size_t), int(size(W,2),  c_size_t), int(size(W,3),  c_size_t), &
-      dxmin, dymin, dzmin, int(Vnx, c_int), int(Vny, c_int), int(Vnz, c_int))
+        u, int(size(u, 1), kind=c_size_t), int(size(u, 2), kind=c_size_t), int(size(u, 3), kind=c_size_t), &
+        v, int(size(v, 1), kind=c_size_t), int(size(v, 2), kind=c_size_t), int(size(v, 3), kind=c_size_t), &
+        v2, int(size(v2, 1), kind=c_size_t), int(size(v2, 2), kind=c_size_t), int(size(v2, 3), kind=c_size_t), &
+        int(vnx, kind=c_int), &
+        int(vny, kind=c_int), &
+        int(vnz, kind=c_int), &
+        w, int(size(w, 1), kind=c_size_t), int(size(w, 2), kind=c_size_t), int(size(w, 3), kind=c_size_t), &
+        real(dxmin, kind=c_double), &
+        real(dymin, kind=c_double), &
+        real(dzmin, kind=c_double) &
+    )
     
   end subroutine CDV
 

@@ -75,6 +75,18 @@ class KernelFunctionDefinition:
 
         self.local_context = LocalContext(self.specification_ast, self.declaration_ast)
 
+    def get_module_name(self) -> str | None:
+
+        module_node = self.full_tree.get_first_parent_of_type("Module")
+
+        if module_node is None:
+            raise Exception("Expected the kernel function to be defined inside a module, but no parent module was found")
+
+        module_stmt = FparserTree(module_node).get_all_nodes_of_type("Module_Stmt")[0]
+        name = FparserTree(module_stmt).get_all_nodes_in_children_of_type("Name")[0]
+
+        return str(name)
+        
     def set_symbol_table(self, symbol_table: dict[str, "KernelFunctionDefinition"]):
         self.symbol_table = symbol_table
 
