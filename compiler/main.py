@@ -13,13 +13,15 @@ from .fparser_tree_abstraction import FparserTree
 
 def main() -> None:
     # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "gol_module.f90"
-    source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdv.f90"
+    # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdv.f90"
+    # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdw.f90"
+    source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdu.f90"
 
     file_collector = SourceFilesCollection_FromFilesystem().load_file(str(source_file))
     kernel_finder = KernelFinder(file_collector)
 
     kernel_functions = kernel_finder.load_all_kernels()
-    gol: KernelFunctionDefinition = kernel_functions["CDV"]
+    gol: KernelFunctionDefinition = kernel_functions["CDU"]
 
     for var in gol.local_context.variables:
         print(str(var))

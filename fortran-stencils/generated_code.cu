@@ -12,11 +12,11 @@ namespace generated_kernels {
 
 __global__ 
 void kernel_group_1_device(
-    int vnx,
     double zero,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-    int vny,
-    int vnz,
+    int unz,
+    int unx,
+    double* u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+    int uny,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -59,22 +59,22 @@ void kernel_group_1_device(
     k = k_from + local_k * k_step;
 
     // Perform the calculation
-    v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] = zero;
+    u2[F_IDX(i, j, k, u2_dim1, u2_dim2, u2_dim3)] = zero;
     
 }
 
 __global__ 
 void kernel_group_3_device(
-    double ax,
-    int vnx,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-    double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-    double ay,
-    int vny,
+    int unz,
     double az,
-    int vnz,
+    int unx,
+    double ax,
+    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+    double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+    double* u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+    int uny,
+    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    double ay,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -117,22 +117,22 @@ void kernel_group_3_device(
     k = k_from + local_k * k_step;
 
     // Perform the calculation
-    v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] = (-(((((((ay * ((v[F_IDX(i, (j + 1), k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) * ((v[F_IDX(i, (j + 1), k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) - ((ay * ((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, (j - 1), k, v_dim1, v_dim2, v_dim3)]))) * ((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, (j - 1), k, v_dim1, v_dim2, v_dim3)]))))) + ((((ax * ((v[F_IDX((i + 1), j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) * ((u[F_IDX(i, (j + 1), k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)]))) - ((ax * ((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX((i - 1), j, k, v_dim1, v_dim2, v_dim3)]))) * ((u[F_IDX((i - 1), (j + 1), k, u_dim1, u_dim2, u_dim3)] + u[F_IDX((i - 1), j, k, u_dim1, u_dim2, u_dim3)])))))) + ((((az * ((v[F_IDX(i, j, (k + 1), v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) * ((w[F_IDX(i, (j + 1), k, w_dim1, w_dim2, w_dim3)] + w[F_IDX(i, j, k, w_dim1, w_dim2, w_dim3)]))) - ((az * ((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, (k - 1), v_dim1, v_dim2, v_dim3)]))) * ((w[F_IDX(i, (j + 1), (k - 1), w_dim1, w_dim2, w_dim3)] + w[F_IDX(i, j, (k - 1), w_dim1, w_dim2, w_dim3)]))))))));
+    u2[F_IDX(i, j, k, u2_dim1, u2_dim2, u2_dim3)] = (-(((((((ax * ((u[F_IDX((i + 1), j, k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)]))) * ((u[F_IDX((i + 1), j, k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)]))) - ((ax * ((u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)] + u[F_IDX((i - 1), j, k, u_dim1, u_dim2, u_dim3)]))) * ((u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)] + u[F_IDX((i - 1), j, k, u_dim1, u_dim2, u_dim3)]))))) + ((((ay * ((u[F_IDX(i, (j + 1), k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)]))) * ((v[F_IDX((i + 1), j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)]))) - ((ay * ((u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, (j - 1), k, u_dim1, u_dim2, u_dim3)]))) * ((v[F_IDX((i + 1), (j - 1), k, v_dim1, v_dim2, v_dim3)] + v[F_IDX(i, (j - 1), k, v_dim1, v_dim2, v_dim3)])))))) + ((((az * ((u[F_IDX(i, j, (k + 1), u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)]))) * ((w[F_IDX((i + 1), j, k, w_dim1, w_dim2, w_dim3)] + w[F_IDX(i, j, k, w_dim1, w_dim2, w_dim3)]))) - ((az * ((u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, j, (k - 1), u_dim1, u_dim2, u_dim3)]))) * ((w[F_IDX((i + 1), j, (k - 1), w_dim1, w_dim2, w_dim3)] + w[F_IDX(i, j, (k - 1), w_dim1, w_dim2, w_dim3)]))))))));
     
 }
 
 __global__ 
 void kernel_group_5_device(
+    double az,
+    int unz,
     double ax,
-    int vnx,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    int unx,
+    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
     double ay,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-    int vny,
-    double az,
-    int vnz,
+    double* u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+    int uny,
+    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -147,7 +147,7 @@ void kernel_group_5_device(
     }
 
     // Declarations of local variables used in the kernel body
-    double uadv;
+    double vadv;
     double wadv;
     int i;
     int j;
@@ -177,19 +177,19 @@ void kernel_group_5_device(
     k = k_from + local_k * k_step;
 
     // Perform the calculation
-    uadv = ((((u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)] + u[F_IDX(i, (j + 1), k, u_dim1, u_dim2, u_dim3)]) + u[F_IDX((i - 1), j, k, u_dim1, u_dim2, u_dim3)]) + u[F_IDX((i - 1), (j + 1), k, u_dim1, u_dim2, u_dim3)]));
-    wadv = ((((w[F_IDX(i, j, k, w_dim1, w_dim2, w_dim3)] + w[F_IDX(i, (j + 1), k, w_dim1, w_dim2, w_dim3)]) + w[F_IDX(i, j, (k - 1), w_dim1, w_dim2, w_dim3)]) + w[F_IDX(i, (j + 1), (k - 1), w_dim1, w_dim2, w_dim3)]));
-    v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] = (v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] - (((((ax * ((v[F_IDX((i + 1), j, k, v_dim1, v_dim2, v_dim3)] - v[F_IDX((i - 1), j, k, v_dim1, v_dim2, v_dim3)]))) * uadv) + ((ay * ((v[F_IDX(i, (j + 1), k, v_dim1, v_dim2, v_dim3)] - v[F_IDX(i, (j - 1), k, v_dim1, v_dim2, v_dim3)]))) * v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)])) + ((az * ((v[F_IDX(i, j, (k + 1), v_dim1, v_dim2, v_dim3)] - v[F_IDX(i, j, (k - 1), v_dim1, v_dim2, v_dim3)]))) * wadv))));
+    vadv = ((((v[F_IDX(i, j, k, v_dim1, v_dim2, v_dim3)] + v[F_IDX((i + 1), j, k, v_dim1, v_dim2, v_dim3)]) + v[F_IDX(i, (j - 1), k, v_dim1, v_dim2, v_dim3)]) + v[F_IDX((i + 1), (j - 1), k, v_dim1, v_dim2, v_dim3)]));
+    wadv = ((((w[F_IDX(i, j, k, w_dim1, w_dim2, w_dim3)] + w[F_IDX((i + 1), j, k, w_dim1, w_dim2, w_dim3)]) + w[F_IDX(i, j, (k - 1), w_dim1, w_dim2, w_dim3)]) + w[F_IDX((i + 1), j, (k - 1), w_dim1, w_dim2, w_dim3)]));
+    u2[F_IDX(i, j, k, u2_dim1, u2_dim2, u2_dim3)] = (u2[F_IDX(i, j, k, u2_dim1, u2_dim2, u2_dim3)] - (((((ax * ((u[F_IDX((i + 1), j, k, u_dim1, u_dim2, u_dim3)] - u[F_IDX((i - 1), j, k, u_dim1, u_dim2, u_dim3)]))) * u[F_IDX(i, j, k, u_dim1, u_dim2, u_dim3)]) + ((ay * ((u[F_IDX(i, (j + 1), k, u_dim1, u_dim2, u_dim3)] - u[F_IDX(i, (j - 1), k, u_dim1, u_dim2, u_dim3)]))) * vadv)) + ((az * ((u[F_IDX(i, j, (k + 1), u_dim1, u_dim2, u_dim3)] - u[F_IDX(i, j, (k - 1), u_dim1, u_dim2, u_dim3)]))) * wadv))));
     
 }
 
 __global__ 
 void kernel_group_6_device(
-    int vnx,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-    int vny,
     double half,
-    int vnz,
+    int unz,
+    int unx,
+    double* u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+    int uny,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -232,7 +232,7 @@ void kernel_group_6_device(
     k = k_from + local_k * k_step;
 
     // Perform the calculation
-    v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] = (v2[F_IDX(i, j, k, v2_dim1, v2_dim2, v2_dim3)] * half);
+    u2[F_IDX(i, j, k, u2_dim1, u2_dim2, u2_dim3)] = (u2[F_IDX(i, j, k, u2_dim1, u2_dim2, u2_dim3)] * half);
     
 }
 
@@ -247,47 +247,47 @@ extern "C" {
         print_timing_summary();
     }
 
-    void cpp_CDV(
+    void cpp_CDU(
         double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+        double* u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+        int unx,
+        int uny,
+        int unz,
         double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-        double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-        int vnx,
-        int vny,
-        int vnz,
         double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
         double dxmin,
         double dymin,
         double dzmin
     ) {
         // 1. Allocate memory on the GPU (Device)
-        double* w_device;
-        double* v2_device;
-        double* u_device;
         double* v_device;
+        double* w_device;
+        double* u2_device;
+        double* u_device;
 
         measure_alloc([&]() {
-        CUCH(cudaMalloc(&w_device, (sizeof(double) * w_dim1 * w_dim2 * w_dim3)));
-        CUCH(cudaMalloc(&v2_device, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3)));
-        CUCH(cudaMalloc(&u_device, (sizeof(double) * u_dim1 * u_dim2 * u_dim3)));
         CUCH(cudaMalloc(&v_device, (sizeof(double) * v_dim1 * v_dim2 * v_dim3)));
+        CUCH(cudaMalloc(&w_device, (sizeof(double) * w_dim1 * w_dim2 * w_dim3)));
+        CUCH(cudaMalloc(&u2_device, (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3)));
+        CUCH(cudaMalloc(&u_device, (sizeof(double) * u_dim1 * u_dim2 * u_dim3)));
         });
 
-        size_t total_h2d_bytes = (sizeof(double) * w_dim1 * w_dim2 * w_dim3) + (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3) + (sizeof(double) * u_dim1 * u_dim2 * u_dim3) + (sizeof(double) * v_dim1 * v_dim2 * v_dim3);
+        size_t total_h2d_bytes = (sizeof(double) * v_dim1 * v_dim2 * v_dim3) + (sizeof(double) * w_dim1 * w_dim2 * w_dim3) + (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3) + (sizeof(double) * u_dim1 * u_dim2 * u_dim3);
 
         // 2. Copy inputs from Host (CPU) to Device (GPU)
         measure_h2d(total_h2d_bytes, [&]() {
-        CUCH(cudaMemcpy(w_device, w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaMemcpyHostToDevice));
-        CUCH(cudaMemcpy(v2_device, v2, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3), cudaMemcpyHostToDevice));
-        CUCH(cudaMemcpy(u_device, u, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaMemcpyHostToDevice));
         CUCH(cudaMemcpy(v_device, v, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaMemcpyHostToDevice));
+        CUCH(cudaMemcpy(w_device, w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaMemcpyHostToDevice));
+        CUCH(cudaMemcpy(u2_device, u2, (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3), cudaMemcpyHostToDevice));
+        CUCH(cudaMemcpy(u_device, u, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaMemcpyHostToDevice));
         });
 
         // Declare local variables
-        double zero;
         double az;
-        double ax;
         double ay;
         double half;
+        double zero;
+        double ax;
 
         // 3. Launch the CUDA Kernels
         measure_kernel_executions([&]() {
@@ -297,27 +297,27 @@ extern "C" {
             // 3.1 Define execution configuration
         
             // Define the primary iteration space size for the kernel grid
-            size_t total_elements = (((vnz + 1) - 2 + 1) * ((vny + 1) - 2 + 1) * ((vnx + 1) - 2 + 1));
+            size_t total_elements = (((unz + 1) - 2 + 1) * ((uny + 1) - 2 + 1) * ((unx + 1) - 2 + 1));
         
             int threadsPerBlock = 256;
             int blocksPerGrid = (total_elements + threadsPerBlock - 1) / threadsPerBlock;
             
             int k_from = 2;
-            int k_to = (vnz + 1);
+            int k_to = (unz + 1);
             
             int j_from = 2;
-            int j_to = (vny + 1);
+            int j_to = (uny + 1);
             
             int i_from = 2;
-            int i_to = (vnx + 1);
+            int i_to = (unx + 1);
         
             // 4. Launch the CUDA kernel
             kernel_group_1_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnx,
                 zero,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
-                vny,
-                vnz,
+                unz,
+                unx,
+                u2_device, u2_dim1, u2_dim2, u2_dim3,
+                uny,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -333,32 +333,32 @@ extern "C" {
             // 3.3 Define execution configuration
         
             // Define the primary iteration space size for the kernel grid
-            size_t total_elements = (((vnz + 1) - 2 + 1) * ((vny + 1) - 2 + 1) * ((vnx + 1) - 2 + 1));
+            size_t total_elements = (((unz + 1) - 2 + 1) * ((uny + 1) - 2 + 1) * ((unx + 1) - 2 + 1));
         
             int threadsPerBlock = 256;
             int blocksPerGrid = (total_elements + threadsPerBlock - 1) / threadsPerBlock;
             
             int k_from = 2;
-            int k_to = (vnz + 1);
+            int k_to = (unz + 1);
             
             int j_from = 2;
-            int j_to = (vny + 1);
+            int j_to = (uny + 1);
             
             int i_from = 2;
-            int i_to = (vnx + 1);
+            int i_to = (unx + 1);
         
             // 4. Launch the CUDA kernel
             kernel_group_3_device<<<blocksPerGrid, threadsPerBlock>>>(
-                ax,
-                vnx,
-                v_device, v_dim1, v_dim2, v_dim3,
-                u_device, u_dim1, u_dim2, u_dim3,
-                w_device, w_dim1, w_dim2, w_dim3,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
-                ay,
-                vny,
+                unz,
                 az,
-                vnz,
+                unx,
+                ax,
+                w_device, w_dim1, w_dim2, w_dim3,
+                u_device, u_dim1, u_dim2, u_dim3,
+                u2_device, u2_dim1, u2_dim2, u2_dim3,
+                uny,
+                v_device, v_dim1, v_dim2, v_dim3,
+                ay,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -367,39 +367,39 @@ extern "C" {
         
             CUCH(cudaGetLastError());
         }
-        ax = (0.125 / dxmin);
-        ay = (0.5 / dymin);
+        ax = (0.5 / dxmin);
+        ay = (0.125 / dymin);
         az = (0.125 / dzmin);
         {
             // 3.5 Define execution configuration
         
             // Define the primary iteration space size for the kernel grid
-            size_t total_elements = (((vnz + 1) - 2 + 1) * ((vny + 1) - 2 + 1) * ((vnx + 1) - 2 + 1));
+            size_t total_elements = (((unz + 1) - 2 + 1) * ((uny + 1) - 2 + 1) * ((unx + 1) - 2 + 1));
         
             int threadsPerBlock = 256;
             int blocksPerGrid = (total_elements + threadsPerBlock - 1) / threadsPerBlock;
             
             int k_from = 2;
-            int k_to = (vnz + 1);
+            int k_to = (unz + 1);
             
             int j_from = 2;
-            int j_to = (vny + 1);
+            int j_to = (uny + 1);
             
             int i_from = 2;
-            int i_to = (vnx + 1);
+            int i_to = (unx + 1);
         
             // 4. Launch the CUDA kernel
             kernel_group_5_device<<<blocksPerGrid, threadsPerBlock>>>(
+                az,
+                unz,
                 ax,
-                vnx,
-                v_device, v_dim1, v_dim2, v_dim3,
+                unx,
+                w_device, w_dim1, w_dim2, w_dim3,
                 u_device, u_dim1, u_dim2, u_dim3,
                 ay,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
-                w_device, w_dim1, w_dim2, w_dim3,
-                vny,
-                az,
-                vnz,
+                u2_device, u2_dim1, u2_dim2, u2_dim3,
+                uny,
+                v_device, v_dim1, v_dim2, v_dim3,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -412,27 +412,27 @@ extern "C" {
             // 3.6 Define execution configuration
         
             // Define the primary iteration space size for the kernel grid
-            size_t total_elements = (((vnz + 1) - 2 + 1) * ((vny + 1) - 2 + 1) * ((vnx + 1) - 2 + 1));
+            size_t total_elements = (((unz + 1) - 2 + 1) * ((uny + 1) - 2 + 1) * ((unx + 1) - 2 + 1));
         
             int threadsPerBlock = 256;
             int blocksPerGrid = (total_elements + threadsPerBlock - 1) / threadsPerBlock;
             
             int k_from = 2;
-            int k_to = (vnz + 1);
+            int k_to = (unz + 1);
             
             int j_from = 2;
-            int j_to = (vny + 1);
+            int j_to = (uny + 1);
             
             int i_from = 2;
-            int i_to = (vnx + 1);
+            int i_to = (unx + 1);
         
             // 4. Launch the CUDA kernel
             kernel_group_6_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnx,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
-                vny,
                 half,
-                vnz,
+                unz,
+                unx,
+                u2_device, u2_dim1, u2_dim2, u2_dim3,
+                uny,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -446,20 +446,20 @@ extern "C" {
         // Wait for GPU to finish
         CUCH(cudaDeviceSynchronize());
 
-        size_t total_d2h_bytes = (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3);
+        size_t total_d2h_bytes = (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3);
 
         // 5. Copy results back from Device (GPU) to Host (CPU)
         measure_d2h(total_d2h_bytes, [&]() {
-        CUCH(cudaMemcpy(v2, v2_device, (sizeof(double) * v2_dim1 * v2_dim2 * v2_dim3), cudaMemcpyDeviceToHost));
+        CUCH(cudaMemcpy(u2, u2_device, (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3), cudaMemcpyDeviceToHost));
         });
 
 
         // 6. Free the GPU memory
         measure_free([&]() {
-        CUCH(cudaFree(w_device));
-        CUCH(cudaFree(v2_device));
-        CUCH(cudaFree(u_device));
         CUCH(cudaFree(v_device));
+        CUCH(cudaFree(w_device));
+        CUCH(cudaFree(u2_device));
+        CUCH(cudaFree(u_device));
         });
     }
 }
