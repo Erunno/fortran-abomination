@@ -28,7 +28,7 @@ contains
   ! ==========================================
 
   subroutine $KERNEL_NAME$( &
-        $ORIGINAL_FORTRAN_KERNEL_ARGS$
+        $ORIGINAL_FORTRAN_FUNC_DUMMY$
     )
     $FORTRAN_KERNEL_ARGS_DECLS$
 

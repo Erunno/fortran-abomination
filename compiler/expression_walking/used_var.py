@@ -16,7 +16,7 @@ class UsedVarsFinder(AstVisitor):
             used_vars_in_kernel = self._find_in_one_kernel(kernel)
             all_used_vars.update(used_vars_in_kernel)
 
-        return list(all_used_vars)
+        return sorted(list(all_used_vars), key=lambda var: var.name())
 
     def _find_in_one_kernel(self, kernel: Kernel) -> list[Variable]:
         used_in_code = self._visit_all_code_lines_of(kernel, post_process='flatten')
@@ -35,7 +35,7 @@ class UsedSizesFinder(AstVisitor):
         used_in_code = self._visit_all_code_lines_of(kernel, post_process='flatten')
         used_in_do_stmts = self._visit_all_do_stmt_ranges_of(kernel, post_process='flatten')
 
-        return list(set(used_in_code + used_in_do_stmts))
+        return sorted(list(set(used_in_code + used_in_do_stmts)), key=lambda x: x[0].name())
 
     @AstVisitor.accept("Intrinsic_Function_Reference")
     def _visit_intrinsic_function_reference(self, node, context) -> list[(Variable, int)]:

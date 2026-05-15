@@ -9,13 +9,13 @@ module generated_kernels
   interface
     subroutine cpp_CDV( &
             u, u_dim1, u_dim2, u_dim3, &
-            vnx, &
             v, v_dim1, v_dim2, v_dim3, &
+            v2, v2_dim1, v2_dim2, v2_dim3, &
+            vnx, &
             vny, &
             vnz, &
             w, w_dim1, w_dim2, w_dim3, &
             dxmin, &
-            v2, v2_dim1, v2_dim2, v2_dim3, &
             dymin, &
             dzmin &
         ) bind(C, name='cpp_CDV')
@@ -24,11 +24,15 @@ module generated_kernels
         integer(c_size_t), value, intent(in) :: u_dim1
         integer(c_size_t), value, intent(in) :: u_dim2
         integer(c_size_t), value, intent(in) :: u_dim3
-        integer(c_int), value, intent(in) :: vnx
         real(kind = knd), dimension(*) :: v
         integer(c_size_t), value, intent(in) :: v_dim1
         integer(c_size_t), value, intent(in) :: v_dim2
         integer(c_size_t), value, intent(in) :: v_dim3
+        real(kind = knd), dimension(*) :: v2
+        integer(c_size_t), value, intent(in) :: v2_dim1
+        integer(c_size_t), value, intent(in) :: v2_dim2
+        integer(c_size_t), value, intent(in) :: v2_dim3
+        integer(c_int), value, intent(in) :: vnx
         integer(c_int), value, intent(in) :: vny
         integer(c_int), value, intent(in) :: vnz
         real(kind = knd), dimension(*) :: w
@@ -36,10 +40,6 @@ module generated_kernels
         integer(c_size_t), value, intent(in) :: w_dim2
         integer(c_size_t), value, intent(in) :: w_dim3
         real(kind = knd), value, intent(in) :: dxmin
-        real(kind = knd), dimension(*) :: v2
-        integer(c_size_t), value, intent(in) :: v2_dim1
-        integer(c_size_t), value, intent(in) :: v2_dim2
-        integer(c_size_t), value, intent(in) :: v2_dim3
         real(kind = knd), value, intent(in) :: dymin
         real(kind = knd), value, intent(in) :: dzmin
     end subroutine cpp_CDV
@@ -58,12 +58,39 @@ contains
   ! ==========================================
 
   subroutine CDV( &
-        $ORIGINAL_FORTRAN_KERNEL_ARGS$
+        v2, &
+        u, &
+        v, &
+        w, &
+        dxmin, &
+        dymin, &
+        dzmin, &
+        vnx, &
+        vny, &
+        vnz
     )
-    $FORTRAN_KERNEL_ARGS_DECLS$
+        real(kind = knd), dimension(:,:,:), intent(out) :: v2
+        real(kind = knd), dimension(:,:,:), intent(in) :: u
+        real(kind = knd), dimension(:,:,:), intent(in) :: v
+        real(kind = knd), dimension(:,:,:), intent(in) :: w
+        real(kind = knd), intent(in) :: dxmin
+        real(kind = knd), intent(in) :: dymin
+        real(kind = knd), intent(in) :: dzmin
+        integer(c_int), intent(in) :: vnx
+        integer(c_int), intent(in) :: vny
+        integer(c_int), intent(in) :: vnz
 
     call cpp_CDV( &
-        $FORTRAN_CPP_KERNEL_ARGS_CALL$
+        u, int(size(u, 1), kind=c_size_t), int(size(u, 2), kind=c_size_t), int(size(u, 3), kind=c_size_t), &
+        v, int(size(v, 1), kind=c_size_t), int(size(v, 2), kind=c_size_t), int(size(v, 3), kind=c_size_t), &
+        v2, int(size(v2, 1), kind=c_size_t), int(size(v2, 2), kind=c_size_t), int(size(v2, 3), kind=c_size_t), &
+        int(vnx, kind=c_int), &
+        int(vny, kind=c_int), &
+        int(vnz, kind=c_int), &
+        w, int(size(w, 1), kind=c_size_t), int(size(w, 2), kind=c_size_t), int(size(w, 3), kind=c_size_t), &
+        real(dxmin, kind=c_double), &
+        real(dymin, kind=c_double), &
+        real(dzmin, kind=c_double)
     )
     
   end subroutine CDV

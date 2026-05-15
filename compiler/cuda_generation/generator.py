@@ -3,13 +3,13 @@ import re
 
 from compiler.cuda_generation.code_parts.cuda_kernel import CudaKernelGenerator
 from compiler.cuda_generation.code_parts.cuda_mem import CudaMemCodeGenerator
+from compiler.cuda_generation.code_parts.fortran_interface import FortranInterfaceGenerator
 from compiler.cuda_generation.code_parts.host_params import ParamsGenerator
-from compiler.cuda_generation.code_parts.kernel_func_namer import KernelFuncNamer
 from compiler.cuda_generation.templates.template import Template
-from compiler.kernel_abstraction import Kernel
+from compiler.kernel_abstraction import Kernel, KernelFunctionDefinition
 
 class FullCodeGenerator:
-    def __init__(self, kernels: list[Kernel], function_name_key: str):
+    def __init__(self, kernels: list[Kernel], entry_kernel_func: KernelFunctionDefinition):
 
         path_to_templates = Path(__file__).resolve().parent / "templates"
         self.cu_file_template_path = path_to_templates / "kernels_interface_template.cu"
@@ -18,7 +18,10 @@ class FullCodeGenerator:
         self.cuda_mem_code_generator = CudaMemCodeGenerator(kernels)
         self.kernel_code_generator = CudaKernelGenerator(kernels)
 
-        self.function_name = function_name_key
+        self.fortran_generator = FortranInterfaceGenerator(kernels, entry_kernel_func)
+
+        self.function_name = entry_kernel_func.name()
+
 
     def generate_cuda_code(self) -> str:
         cu_file_template = Template(self.cu_file_template_path)
@@ -64,22 +67,20 @@ class FullCodeGenerator:
 
         fortran_interface_template.replace_placeholder("MODULE_NAME", "generated_kernels", tabs=0)
         fortran_interface_template.replace_placeholder("KERNEL_NAME", self.function_name, tabs=0)
-        
 
-        fortran_interface_dummy = self.host_params_generator.generate_fortran_interface_dummies()
+        fortran_interface_dummy = self.fortran_generator.generate_interface_dummies()
         fortran_interface_template.replace_placeholder("FORTRAN_INTERFACE_DUMMY", fortran_interface_dummy, tabs=3)
 
-        fortran_interface_decls = self.host_params_generator.generate_fortran_interface_decls()
+        fortran_interface_decls = self.fortran_generator.generate_interface_decls()
         fortran_interface_template.replace_placeholder("FORTRAN_INTERFACE_DECLS", fortran_interface_decls, tabs=2)
 
+        fortran_cpp_kernel_args_call = self.fortran_generator.generate_cpp_kernel_call()
+        fortran_interface_template.replace_placeholder("FORTRAN_CPP_KERNEL_ARGS_CALL", fortran_cpp_kernel_args_call, tabs=2)
 
-        # original_fortran_kernel_args = self.host_params_generator.generate_original_fortran_kernel_args()
-        # fortran_interface_template.replace_placeholder("ORIGINAL_FORTRAN_KERNEL_ARGS", original_fortran_kernel_args, tabs=4)
+        original_fortran_func_dummies = self.fortran_generator.generate_original_func_args_dummies()
+        fortran_interface_template.replace_placeholder("ORIGINAL_FORTRAN_FUNC_DUMMY", original_fortran_func_dummies, tabs=2)
 
-        # fortran_cpp_kernel_args_call = self.host_params_generator.generate_fortran_cpp_kernel_args_call()
-        # fortran_interface_template.replace_placeholder("FORTRAN_CPP_KERNEL_ARGS_CALL", fortran_cpp_kernel_args_call, tabs=6)
-
-        # fortran_kernel_args_types_and_attrs = self.host_params_generator.generate_fortran_kernel_args_types_and_attrs()
-        # fortran_interface_template.replace_placeholder("FORTRAN_KERNEL_ARGS_TYPES_AND_ATTRS", fortran_kernel_args_types_and_attrs, tabs=8)
+        original_fortran_func_args_decls = self.fortran_generator.generate_original_func_args_decls()
+        fortran_interface_template.replace_placeholder("FORTRAN_KERNEL_ARGS_DECLS", original_fortran_func_args_decls, tabs=2)
 
         return fortran_interface_template.code

@@ -72,7 +72,7 @@ def main() -> None:
     print(generates_lines)
 
     print("code generation:")
-    full_code_gen = FullCodeGenerator(kernels, func_name)
+    full_code_gen = FullCodeGenerator(kernels, gol)
     code = full_code_gen.generate_cuda_code()
     print(f"Generated CUDA code:\n{code}")
 

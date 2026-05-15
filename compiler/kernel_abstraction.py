@@ -87,7 +87,10 @@ class KernelFunctionDefinition:
     def extract_kernels_graph_with_calls(self, caller_context: Context, call_args: list[Variable]) -> list[Kernel]:
         context_with_args = ContextWithArguments(self.local_context, caller_context, call_args)
         return self._extract_kernels_sub_graph(self.code_ast.tree, context_with_args)
-        
+    
+    def parameters(self) -> list[Variable]:
+        return [var for var in self.local_context.variables if var.is_function_param()]
+
     def _extract_kernels_sub_graph(self, code_ast, current_context) -> list[Kernel]:
 
         class CurrentKernels:
