@@ -51,12 +51,30 @@ def binary_path(case: str, variant: str,
     return os.path.join(BENCHMARKS_DIR, 'bin', build_id, 'benchmark')
 
 
+def _sources_newer_than(case: str, variant: str, binary: str) -> bool:
+    """Return True if any source file is newer than the binary."""
+    binary_mtime = os.path.getmtime(binary)
+    check_dirs = [
+        os.path.join(BENCHMARKS_DIR, case, variant),
+        os.path.join(BENCHMARKS_DIR, case),
+        os.path.join(BENCHMARKS_DIR, 'common'),
+    ]
+    check_files = [os.path.join(BENCHMARKS_DIR, 'Makefile')]
+    for d in check_dirs:
+        if os.path.isdir(d):
+            check_files += [os.path.join(d, f) for f in os.listdir(d)]
+    return any(
+        os.path.isfile(f) and os.path.getmtime(f) > binary_mtime
+        for f in check_files
+    )
+
+
 def build(case: str, variant: str,
           nx: int, ny: int, nz: int,
           niter: int, nwarmup: int) -> str:
-    """Ensure the benchmark binary exists; build if needed. Returns binary path."""
+    """Ensure the benchmark binary is up-to-date; build if needed. Returns binary path."""
     path = binary_path(case, variant, nx, ny, nz, niter, nwarmup)
-    if os.path.exists(path):
+    if os.path.exists(path) and not _sources_newer_than(case, variant, path):
         return path
 
     log(f'  building {case}/{variant} {nx}x{ny}x{nz} niter={niter} nwarmup={nwarmup} ...')
