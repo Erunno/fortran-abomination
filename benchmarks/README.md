@@ -1,8 +1,8 @@
 # Benchmark Suite
 
-A self-contained benchmark suite for comparing Fortran stencil kernels across three
-implementation variants: plain Fortran, OpenMP-parallelised Fortran, and CUDA (via
-Fortran ↔ C interop).  All build logic lives in a single top-level `Makefile`;
+A self-contained benchmark suite for comparing Fortran stencil kernels across five
+implementation variants: plain Fortran, OpenMP-parallelised Fortran, CUDA (via
+Fortran ↔ C interop), plain C++, and OpenMP-parallelised C++.  All build logic lives in a single top-level `Makefile`;
 per-case and per-variant details are factored into small, reusable include files.
 
 ---
@@ -81,15 +81,18 @@ the binary, making it safe to have multiple builds coexist.
 
 | Variable | Default | Meaning |
 |----------|---------|---------|
-| `VARIANT` | `Fortran` | `Fortran` \| `Fortran-OMP` \| `CUDA` |
+| `VARIANT` | `Fortran` | `Fortran` \| `Fortran-OMP` \| `CUDA` \| `CPP` \| `CPP-OMP` |
 | `NX` | 64 | Grid interior points in X |
 | `NY` | 64 | Grid interior points in Y |
 | `NZ` | 64 | Grid interior points in Z |
 | `NITER` | 100 | Timed iterations per run |
 | `NWARMUP` | 5 | Warm-up iterations (not timed) |
 | `FC` | `gfortran` | Fortran compiler |
-| `FFLAGS` | `-O3 -march=native -flto` | Base compiler flags |
+| `FFLAGS` | `-O3 -march=native -flto` | Base Fortran compiler flags |
 | `EXTRA_FFLAGS` | _(empty)_ | Appended to `FFLAGS` — useful for one-off flags |
+| `CXX` | `g++` | C++ compiler (CPP / CPP-OMP variants) |
+| `CXXFLAGS` | `-O3 -march=native` | Base C++ compiler flags |
+| `EXTRA_CXXFLAGS` | _(empty)_ | Appended to `CXXFLAGS` |
 | `CUDA_HOME` | `/usr/local/cuda` | CUDA installation root |
 | `NVCC` | `$CUDA_HOME/bin/nvcc` | CUDA compiler |
 | `NVCCFLAGS` | `-O3` | NVCC base flags |
@@ -213,13 +216,15 @@ names follow the pattern `grid_<NX>x<NY>x<NZ>_niter<N>.{png,pdf}`.
 
 ### Figure design
 
-Each figure shows grouped bars — one group per kernel, three bars per group:
+Each figure shows grouped bars — one group per kernel, up to five bars per group:
 
 | Bar | What it shows |
 |-----|--------------|
 | Blue (Fortran) | Total wall-clock time, serial Fortran |
 | Amber (Fortran-OMP) | Total wall-clock time, OpenMP Fortran |
 | CUDA (stacked) | Broken down: kernel (green) + data transfer H↔D (vermillion) + malloc/free (gray) |
+| Sky blue (CPP) | Total wall-clock time, serial C++ |
+| Reddish-purple (CPP-OMP) | Total wall-clock time, OpenMP C++ |
 
 Error bars show ±1 standard deviation across `ROUNDS` runs.
 
@@ -257,10 +262,18 @@ benchmarks/
 │   ├── Fortran-OMP/
 │   │   ├── Makefile
 │   │   └── cdu.f90
-│   └── CUDA/
+│   ├── CUDA/
+│   │   ├── Makefile
+│   │   ├── cdu.f90           ← Fortran ↔ C wrapper
+│   │   └── generated_code.cu ← CUDA kernel (auto-generated)
+│   ├── CPP/
+│   │   ├── Makefile
+│   │   ├── cdu.f90           ← Fortran ↔ C wrapper (iso_c_binding)
+│   │   └── generated_cpp_impl.cpp ← C++ kernel
+│   └── CPP-OMP/
 │       ├── Makefile
-│       ├── cdw.f90           ← Fortran ↔ C wrapper
-│       └── generated_code.cu ← CUDA kernel (auto-generated)
+│       ├── cdu.f90           ← identical to CPP wrapper
+│       └── generated_cpp_impl.cpp ← C++ kernel with OpenMP pragmas
 │
 ├── CDW/                      ← case: vertical momentum advection (W component)
 │   └── ...                   ← same layout as CDU/
@@ -297,21 +310,24 @@ common/variants.mk           ← extra flags per variant (OMP, CUDA libs)
 **`common/defaults.mk`** sets safe defaults for every Make variable.  It detects
 whether `FC` is Make's built-in `f77` default and replaces it with `gfortran`.
 
-**`CASE/case.mk`** is a three-line file that answers two questions for the build
+**`CASE/case.mk`** is a small file that answers three questions for the build
 system:
 
 ```make
-CASE_SRC        = cvd.f90          # the variant's main Fortran source
+CASE_SRC        = cvd.f90            # the variant's main Fortran source
 CASE_CUDA_EXTRA = generated_code.cu  # extra .cu files (CUDA only)
+CASE_CPP_EXTRA  = generated_cpp_impl.cpp  # extra .cpp files (CPP / CPP-OMP)
 ```
 
 **`common/variants.mk`** appends variant-specific flags:
 
-| Variant | Extra `FFLAGS` | Extra `LDFLAGS` |
-|---------|---------------|----------------|
-| `Fortran` | _(none)_ | _(none)_ |
-| `Fortran-OMP` | `-fopenmp` | `-fopenmp` |
-| `CUDA` | _(none)_ | `-L$CUDA_HOME/lib64 -lcudart -lstdc++` |
+| Variant | Extra `FFLAGS` | Extra `CXXFLAGS` | Extra `LDFLAGS` |
+|---------|---------------|-----------------|----------------|
+| `Fortran` | _(none)_ | — | _(none)_ |
+| `Fortran-OMP` | `-fopenmp` | — | `-fopenmp` |
+| `CUDA` | _(none)_ | — | `-L$CUDA_HOME/lib64 -lcudart -lstdc++` |
+| `CPP` | _(none)_ | _(none)_ | `-lstdc++` |
+| `CPP-OMP` | `-fopenmp` | `-fopenmp` | `-lstdc++ -fopenmp` |
 
 **`common/standalone.mk`** is included by every `CASE/VARIANT/Makefile`.  It
 locates the top-level `Makefile` relative to itself and forwards `all` and `clean`
@@ -340,8 +356,8 @@ Each case directory contains:
 | `main.f90` | Benchmark driver (allocates arrays, runs warmup + timed loop) |
 | `Fortran/` | Serial Fortran implementation |
 | `Fortran-OMP/` | OpenMP-parallelised Fortran implementation |
-| `CUDA/` | CUDA implementation: a Fortran wrapper + generated `.cu` kernel |
-
+| `CUDA/` | CUDA implementation: a Fortran wrapper + generated `.cu` kernel || `CPP/` | C++ implementation: a Fortran wrapper (`iso_c_binding`) + generated `.cpp` kernel |
+| `CPP-OMP/` | Same as CPP with `#pragma omp parallel for` on all outer loop nests |
 The Fortran source in each variant must export a module named `MomentumAdvection`
 that provides at minimum:
 
@@ -389,7 +405,7 @@ for each (case, variant, grid, niter):
 
 Parsing is variant-aware:
 
-- **Fortran / Fortran-OMP**: regex on `total_ms: <value> ms`
+- **Fortran / Fortran-OMP / CPP / CPP-OMP**: regex on `total_ms: <value> ms`
 - **CUDA**: regex on each phase line (`malloc_total_ms`, `h2d_total_ms`, etc.)
 
 All errors for a single combination are caught and reported to stderr; the loop

@@ -21,6 +21,11 @@ endif
 FFLAGS       ?= -O3 -march=native -flto
 EXTRA_FFLAGS ?=
 
+# ---- C++ compiler & flags ---------------------------------
+CXX          ?= g++
+CXXFLAGS     ?= -O3 -march=native
+EXTRA_CXXFLAGS ?=
+
 # ---- CUDA compiler & flags ---------------------------------
 CUDA_HOME  ?= /usr/local/cuda
 NVCC       ?= $(CUDA_HOME)/bin/nvcc

@@ -7,6 +7,19 @@
 #include <numeric>
 #include <vector>
 
+// ── CUDA compatibility for plain C++ compilation (g++) ───────────────────────────
+// When compiled with nvcc, __CUDACC__ is defined and all CUDA qualifiers/APIs
+// are available as normal.  When compiled with g++ (CPP / CPP-OMP variants),
+// we provide empty stand-ins so the same header can be shared.
+#ifndef __CUDACC__
+#  ifndef __device__
+#    define __device__
+#  endif
+#  ifndef __forceinline__
+#    define __forceinline__ inline
+#  endif
+#  define CUCH(call) (call)
+#else
 #define CUCH(call) \
     do { \
         cudaError_t err = call; \
@@ -16,6 +29,7 @@
             std::exit(EXIT_FAILURE); \
         } \
     } while (0)
+#endif
 
 namespace generated_kernels::indexing {
 
@@ -60,6 +74,10 @@ __device__ __forceinline__ size_t F_IDX(Args... args) {
 
 }
 
+// ── Timing infrastructure — CUDA only ───────────────────────────────────────────
+// The functions below use cudaEvent_t and related CUDA runtime APIs.
+// They are excluded entirely from plain C++ compilation.
+#ifdef __CUDACC__
 namespace generated_kernels::timing {
 
 static std::vector<float> g_malloc_ms;
@@ -203,5 +221,6 @@ void print_timing_summary() {
 }
    
 }
+#endif  // __CUDACC__
 
-#endif // COMMON_FUNCTIONS_CUH
+#endif  // COMMON_FUNCTIONS_CUH

@@ -5,18 +5,31 @@
 # ============================================================
 
 ifeq ($(VARIANT),Fortran-OMP)
-  VARIANT_FFLAGS  = -fopenmp
-  VARIANT_LDFLAGS = -fopenmp
+  VARIANT_FFLAGS   = -fopenmp
+  VARIANT_LDFLAGS  = -fopenmp
+  VARIANT_CXXFLAGS =
 
 else ifeq ($(VARIANT),CUDA)
-  VARIANT_FFLAGS  =
-  VARIANT_LDFLAGS = -L$(CUDA_HOME)/lib64 -lcudart -lstdc++
+  VARIANT_FFLAGS   =
+  VARIANT_LDFLAGS  = -L$(CUDA_HOME)/lib64 -lcudart -lstdc++
+  VARIANT_CXXFLAGS =
   ifneq ($(CUDA_ARCH),)
     NVCCFLAGS += -arch=$(CUDA_ARCH)
   endif
 
+else ifeq ($(VARIANT),CPP)
+  VARIANT_FFLAGS   =
+  VARIANT_LDFLAGS  = -lstdc++
+  VARIANT_CXXFLAGS =
+
+else ifeq ($(VARIANT),CPP-OMP)
+  VARIANT_FFLAGS   = -fopenmp
+  VARIANT_LDFLAGS  = -lstdc++ -fopenmp
+  VARIANT_CXXFLAGS = -fopenmp
+
 else
   # Plain Fortran (no extra flags needed)
-  VARIANT_FFLAGS  =
-  VARIANT_LDFLAGS =
+  VARIANT_FFLAGS   =
+  VARIANT_LDFLAGS  =
+  VARIANT_CXXFLAGS =
 endif

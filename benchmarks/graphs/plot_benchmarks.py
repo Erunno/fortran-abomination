@@ -59,11 +59,11 @@ plt.rcParams.update({
 })
 
 # ── Layout ──────────────────────────────────────────────────────────────────────
-VARIANT_ORDER  = ['Fortran', 'Fortran-OMP', 'CUDA']
+VARIANT_ORDER  = ['Fortran', 'Fortran-OMP', 'CUDA', 'CPP', 'CPP-OMP']
 FUNCTION_ORDER = ['CDW', 'CDU', 'CDV', 'CVD']   # fallback order; actual order from CSV
 
-BAR_WIDTH  = 0.23   # width of a single bar
-GROUP_GAP  = 0.10   # extra space between function groups
+BAR_WIDTH  = 0.16   # width of a single bar (narrower to fit 5 per group)
+GROUP_GAP  = 0.12   # extra space between function groups
 
 # ── Palette — Wong (2011) colorblind-safe ────────────────────────────────────────
 #   blue          amber         green         vermillion    gray
@@ -72,6 +72,8 @@ C_FORTRAN_OMP = '#E69F00'
 C_KERNEL      = '#009E73'   # fast — green
 C_MEM_MOV     = '#D55E00'   # bottleneck — vermillion
 C_MEM_ALLOC   = '#CCCCCC'   # minor overhead — gray
+C_CPP         = '#56B4E9'   # sky blue
+C_CPP_OMP     = '#CC79A7'   # reddish purple
 
 # Hatches for B&W / accessibility
 H_FORTRAN     = ''
@@ -79,6 +81,8 @@ H_FORTRAN_OMP = '///'
 H_KERNEL      = ''
 H_MEM         = 'xxx'
 H_ALLOC       = '...'
+H_CPP         = '\\\\\\'
+H_CPP_OMP     = 'ooo'
 
 ECOLOR = '#333333'
 
@@ -88,6 +92,8 @@ LEGEND_PATCHES = [
     mpatches.Patch(facecolor=C_KERNEL,      hatch=H_KERNEL,      edgecolor='white', label='CUDA — kernel'),
     mpatches.Patch(facecolor=C_MEM_MOV,     hatch=H_MEM,         edgecolor='white', label='CUDA — data transfer (H↔D)'),
     mpatches.Patch(facecolor=C_MEM_ALLOC,   hatch=H_ALLOC,       edgecolor='white', label='CUDA — malloc / free'),
+    mpatches.Patch(facecolor=C_CPP,         hatch=H_CPP,         edgecolor='white', label='C++ (serial)'),
+    mpatches.Patch(facecolor=C_CPP_OMP,     hatch=H_CPP_OMP,     edgecolor='white', label='C++ (OpenMP)'),
 ]
 
 
@@ -188,10 +194,13 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
             else:
                 total_ms  = row['total_ms'] or 0.0
                 total_std = row['total_ms_std'] or 0.0
-                if variant == 'Fortran':
-                    c, h = C_FORTRAN, H_FORTRAN
-                else:
-                    c, h = C_FORTRAN_OMP, H_FORTRAN_OMP
+                palette = {
+                    'Fortran':     (C_FORTRAN,     H_FORTRAN),
+                    'Fortran-OMP': (C_FORTRAN_OMP, H_FORTRAN_OMP),
+                    'CPP':         (C_CPP,         H_CPP),
+                    'CPP-OMP':     (C_CPP_OMP,     H_CPP_OMP),
+                }
+                c, h = palette.get(variant, (C_FORTRAN, H_FORTRAN))
                 ax.bar(x, total_ms, BAR_WIDTH,
                        color=c, hatch=h, edgecolor='white', linewidth=0.5, zorder=3,
                        yerr=total_std, error_kw=ebar_kw)
@@ -217,8 +226,10 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
     present_variants = {r['variant'] for r in rows}
 
     def _variant_in_label(label):
-        if 'serial' in label:   return 'Fortran' in present_variants
-        if 'OpenMP' in label:   return 'Fortran-OMP' in present_variants
+        if 'serial' in label and 'C++' not in label:   return 'Fortran' in present_variants
+        if 'OpenMP' in label and 'C++' not in label:   return 'Fortran-OMP' in present_variants
+        if 'C++ (serial)' in label:                    return 'CPP' in present_variants
+        if 'C++ (OpenMP)' in label:                    return 'CPP-OMP' in present_variants
         return 'CUDA' in present_variants   # all three CUDA entries
 
     visible_patches = [p for p in LEGEND_PATCHES if _variant_in_label(p.get_label())]
