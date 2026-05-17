@@ -147,6 +147,20 @@ def run_combination(case, variant, nx, ny, nz, niter) -> str:
         ])
     else:
         totals = [parse_fortran(o) for o in outputs]
+        suffix = CSV_SEP.join(['', '', '', '', '', '', '', fmt(totals)])
+
+    return prefix + CSV_SEP + suffix
+
+
+def main():
+    print(CSV_HEADER, flush=True)
+
+    for case in FUNCTIONS:
+        for variant in VARIANTS:
+            for (nx, ny, nz) in GRIDS:
+                for niter in ITERS:
+                    label = f'{case}/{variant} {nx}x{ny}x{nz} niter={niter}'
+                    log(f'[{label}]')
                     try:
                         row = run_combination(case, variant, nx, ny, nz, niter)
                         print(row, flush=True)
