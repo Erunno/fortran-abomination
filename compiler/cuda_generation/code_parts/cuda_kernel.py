@@ -91,68 +91,83 @@ class KernelGroupGenerator:
         )
         self.cuda_code_kernel_template.replace_placeholder("DEVICE_PARAMETERS", device_param_decls, tabs=1)
         
-        local_vars_decls_code = self._generate_decls_of_local_vars(self.group.kernels)
+        local_vars_decls_code = self.generate_decls_of_local_vars()
         self.cuda_code_kernel_template.replace_placeholder("LOCAL_VAR_DECLS", local_vars_decls_code, tabs=1)
 
         indexing_calculations_code = self._get_outer_space_index_calculation_code()
         self.cuda_code_kernel_template.replace_placeholder("INDEX_MAPPING_LOGIC", indexing_calculations_code, tabs=1)
 
-        body_code = self._generate_kernel_body_code()
+        body_code = self.generate_kernel_body_code()
         self.cuda_code_kernel_template.replace_placeholder("KERNEL_BODY", body_code, tabs=1)
 
         return self.cuda_code_kernel_template.code
 
-    def _generate_decls_of_local_vars(self, kernels: list[Kernel]) -> str:
-        used_vars = self.used_vars_finder.find_used_vars(kernels)
+    def generate_decls_of_local_vars(self) -> str:
+        used_vars = self.used_vars_finder.find_used_vars(self.group.kernels)
         param_vars = self.param_gen.get_device_params_variables()
         
         local_vars = [var 
                       for var in used_vars 
                       if not var.is_function_param() and var not in param_vars]
-        
+
         decls = [
             f"{self.typer.get_cpp_type_str(var.type())} {self.variable_namer.format_name(var)};"
             for var in local_vars]
 
-        return "\n".join(decls)
+        decl_removed_duplicates = sorted(set(decls), key=lambda x: x.split()[1])
 
-    def _generate_kernel_body_code(self) -> str:
+        return "\n".join(decl_removed_duplicates)
+
+    def generate_kernel_body_code(self) -> str:
 
         def _tab_code(code: str) -> str:
             return "\n".join([
                 self.tab + line if line.strip() else line
                 for line in code.split("\n")])
         
-        def _generate_body_for_kernel(kernels: list[Kernel], loop_depth: int) -> tuple[str, list[Kernel]]:
+        def _generate_body_for_kernel(kernels: list[Kernel], current_loops: list[DoLoopContext]) -> tuple[str, list[Kernel]]:
             if len(kernels) == 0:
                 return "", []
 
             first_kernel, *rest_kernels = kernels
-            kernel_loop_depth = first_kernel.get_loop_depth()
 
-            if kernel_loop_depth > loop_depth:
-                first_unaddressed_loop_ctx = first_kernel.get_all_do_loop_contexts_from_outer_to_inner()[loop_depth]
+            fst_kernel_loops = first_kernel.get_all_do_loop_contexts_from_outer_to_inner()
+            kernel_loop_depth = len(fst_kernel_loops)
+
+            kernel_lies_in_same_loop_context = \
+                len(current_loops) == kernel_loop_depth and \
+                all(ctx1 == ctx2 for ctx1, ctx2 in zip(current_loops, fst_kernel_loops)) 
+
+            if kernel_lies_in_same_loop_context:
+                kernel_code = self.expr_code_generator.generate_cpp_code(first_kernel)
+                rest_code, rest_of_kernels = _generate_body_for_kernel(rest_kernels, current_loops)
+
+                full_code = kernel_code + "\n" + rest_code
+
+                return full_code, rest_of_kernels
+            
+            loop_prefix_is_same_as_current = \
+                len(current_loops) < kernel_loop_depth and \
+                all(ctx1 == ctx2 for ctx1, ctx2 in zip(current_loops, fst_kernel_loops[:len(current_loops)]))
+
+            if loop_prefix_is_same_as_current:
+                first_unaddressed_loop_ctx = fst_kernel_loops[len(current_loops)]
 
                 loop_start = self.do_generator.generate_for_loop(first_unaddressed_loop_ctx)
-                code, rest_of_kernels = _generate_body_for_kernel(kernels, loop_depth + 1)
+                code, rest_of_kernels = _generate_body_for_kernel(kernels, current_loops + [first_unaddressed_loop_ctx])
                 loop_end = self.do_generator.get_for_loop_closing()
                 
                 full_code = loop_start + _tab_code(code) + loop_end
                 return full_code, rest_of_kernels
+            
+            return "", kernels
 
-            kernel_code = self.expr_code_generator.generate_cpp_code(first_kernel)
-            rest_code, rest_of_kernels = _generate_body_for_kernel(rest_kernels, loop_depth)
-
-            full_code = kernel_code + "\n" + rest_code
-
-            return full_code, rest_of_kernels
-        
         kernels = self.group.kernels
         full_code = ""
-        outer_loop_depth = len(self.group.get_shared_outer_loop_contexts())
+        outer_loops = self.group.get_shared_outer_loop_contexts()
 
         while len(kernels) > 0:
-            code, kernels = _generate_body_for_kernel(kernels, outer_loop_depth)
+            code, kernels = _generate_body_for_kernel(kernels, outer_loops)
             full_code += code + "\n"
 
         return full_code

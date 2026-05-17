@@ -5,6 +5,7 @@ from compiler.cuda_generation.code_parts.cuda_kernel import CudaKernelGenerator
 from compiler.cuda_generation.code_parts.cuda_mem import CudaMemCodeGenerator
 from compiler.cuda_generation.code_parts.fortran_interface import FortranInterfaceGenerator
 from compiler.cuda_generation.code_parts.host_params import ParamsGenerator
+from compiler.cuda_generation.code_parts.pure_cpp_gen import PureCppGenerator
 from compiler.cuda_generation.templates.template import Template
 from compiler.kernel_abstraction import Kernel, KernelFunctionDefinition
 
@@ -13,12 +14,17 @@ class FullCodeGenerator:
 
         path_to_templates = Path(__file__).resolve().parent / "templates"
         self.cu_file_template_path = path_to_templates / "kernels_interface_template.cu"
+        self.fortran_interface_template_path = path_to_templates / "fortran_interface.f90"
+        self.pure_cpp_template_path = path_to_templates / "cpp_impl.cpp"
+
 
         self.host_params_generator = ParamsGenerator(kernels, preceding_kernels=[])
         self.cuda_mem_code_generator = CudaMemCodeGenerator(kernels)
         self.kernel_code_generator = CudaKernelGenerator(kernels)
 
         self.fortran_generator = FortranInterfaceGenerator(kernels, entry_kernel_func)
+
+        self.pure_cpp_generator = PureCppGenerator(kernels)
 
         self.entry_kernel_func = entry_kernel_func
 
@@ -62,8 +68,7 @@ class FullCodeGenerator:
         return cu_file_template.code
 
     def generate_fortran_interface_code(self) -> str:
-        fortran_interface_template = Template(Path(__file__).resolve().parent / "templates" / "fortran_interface.f90")
-
+        fortran_interface_template = Template(self.fortran_interface_template_path)
 
         function_name = self.entry_kernel_func.name()
         module_name = self.entry_kernel_func.get_module_name()
@@ -86,3 +91,20 @@ class FullCodeGenerator:
         fortran_interface_template.replace_placeholder("FORTRAN_KERNEL_ARGS_DECLS", original_fortran_func_args_decls, tabs=2)
 
         return fortran_interface_template.code
+
+
+    def generate_pure_cpp_code(self) -> str:
+        cpp_file_template = Template(self.pure_cpp_template_path)
+
+        cpp_file_template.replace_placeholder("KERNEL_NAME", self.entry_kernel_func.name(), tabs=0)
+
+        host_params = self.host_params_generator.generate_host_params()
+        cpp_file_template.replace_placeholder("HOST_PARAMETERS", host_params, tabs=2)
+
+        kernel_body = self.pure_cpp_generator.generate_kernel_body()
+        cpp_file_template.replace_placeholder("KERNEL_BODY", kernel_body, tabs=2)
+
+        local_var_decls = self.pure_cpp_generator.generate_local_var_decls()
+        cpp_file_template.replace_placeholder("LOCAL_VAR_DECLS", local_var_decls, tabs=2)
+
+        return cpp_file_template.code

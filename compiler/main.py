@@ -13,15 +13,15 @@ from .fparser_tree_abstraction import FparserTree
 
 def main() -> None:
     # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "gol_module.f90"
-    # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdv.f90"
-    source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdw.f90"
+    source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdv.f90"
+    # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdw.f90"
     # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "elmm_cdu.f90"
 
     file_collector = SourceFilesCollection_FromFilesystem().load_file(str(source_file))
     kernel_finder = KernelFinder(file_collector)
 
     kernel_functions = kernel_finder.load_all_kernels()
-    gol: KernelFunctionDefinition = kernel_functions["CDW"]
+    gol: KernelFunctionDefinition = kernel_functions["CDV"]
 
     for var in gol.local_context.variables:
         print(str(var))
@@ -85,9 +85,14 @@ def main() -> None:
     with open(code_file, "w") as f:
         f.write(code)
 
-    fotran_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "generated_interface.f90"
-    with open(fotran_file, "w") as f:
+    fortran_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "generated_interface.f90"
+    with open(fortran_file, "w") as f:
         f.write(fortran_interface_code)
+
+    pure_cpp_code = full_code_gen.generate_pure_cpp_code()
+    cpp_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "generated_cpp_impl.cpp"
+    with open(cpp_file, "w") as f:
+        f.write(pure_cpp_code)
 
 if __name__ == "__main__":
     main()
