@@ -7,7 +7,7 @@
 #include <numeric>
 #include <vector>
 
-#if defined(__CUDACC__)
+#ifdef __CUDACC__
     #define CUDA_CALLABLE __host__ __device__
 #else
     #define CUDA_CALLABLE
@@ -65,7 +65,10 @@ CUDA_CALLABLE size_t F_IDX(Args... args) {
 }
 
 }
-
+// ── Timing infrastructure — CUDA only ───────────────────────────────────────────
+// The functions below use cudaEvent_t and related CUDA runtime APIs.
+// They are excluded entirely from plain C++ compilation.
+#ifdef __CUDACC__
 namespace generated_kernels::timing {
 
 static std::vector<float> g_malloc_ms;
@@ -209,5 +212,6 @@ void print_timing_summary() {
 }
    
 }
+#endif  // __CUDACC__
 
 #endif // COMMON_FUNCTIONS_CUH
