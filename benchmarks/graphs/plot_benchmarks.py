@@ -173,7 +173,6 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
                 continue
 
             x = group_ctrs[fi] + offsets[vi]
-            # DESIGN FIX: Thinner error bars
             ebar_kw = dict(elinewidth=0.8, ecolor=ECOLOR, capsize=2.5,
                            capthick=0.8, zorder=6)
 

@@ -54,6 +54,7 @@ CASE_CPP_EXTRA ?=
 CASE_OBJ    = $(BINDIR)/case_src.o
 CUDA_OBJS   = $(foreach s,$(CASE_CUDA_EXTRA),$(BINDIR)/$(basename $(notdir $(s))).o)
 CPP_OBJS    = $(foreach s,$(CASE_CPP_EXTRA), $(BINDIR)/$(basename $(notdir $(s))).o)
+MAIN_SRC    ?= main.f90
 MAIN_OBJ    = $(BINDIR)/main.o
 
 ifeq ($(VARIANT),CUDA)
@@ -65,7 +66,7 @@ else
 endif
 
 # ---- Targets -----------------------------------------------
-.PHONY: all clean clean-all
+.PHONY: all clean clean-all test
 
 all: $(BENCH)
 
@@ -87,12 +88,16 @@ $(BINDIR)/%.o: $(CASE)/$(VARIANT)/%.cpp | $(BINDIR)
 	$(CXX) $(ALL_CXXFLAGS) -I$(CURDIR)/common -c $< -o $@
 
 # Compile the benchmark driver (main.f90 in the CASE directory)
-$(MAIN_OBJ): $(CASE)/main.f90 $(CASE_OBJ)
+$(MAIN_OBJ): $(CASE)/$(MAIN_SRC) $(CASE_OBJ)
 	$(FC) $(ALL_FFLAGS) $(DEFINES) -I$(BINDIR) -c $< -o $@
 
 # Link everything
 $(BENCH): $(MAIN_OBJ) $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(EXTRA_FFLAGS) -o $@ $^ $(VARIANT_LDFLAGS)
+
+# Run correctness tests for all (or a specific) case
+test:
+	@python3 $(CURDIR)/run_tests.py $(CASE)
 
 # Remove build artefacts for the current CASE/VARIANT/params combination
 clean:
