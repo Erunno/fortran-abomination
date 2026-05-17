@@ -8,7 +8,7 @@ from compiler.cuda_generation.code_parts.host_params import ParamsGenerator
 from compiler.cuda_generation.code_parts.variable_namer import VariableNamer
 from compiler.cuda_generation.kernel_depence import DependenceResolver, KernelGroup
 from compiler.cuda_generation.templates.template import Template
-from compiler.expression_walking.used_var import UsedVarsFinder
+from compiler.expression_walking.used_var import UsedVarsFinder, WriteVarsFinder
 from compiler.kernel_abstraction import Kernel
 
 class KernelGroupGenerator:
@@ -21,6 +21,7 @@ class KernelGroupGenerator:
         self.do_generator = DoLoopGenerator()
         self.typer = CppTyper()
         self.used_vars_finder = UsedVarsFinder()
+        self.written_vars_finder = WriteVarsFinder()
         self.param_gen = ParamsGenerator(
             group.kernels, preceding_kernels=group.get_all_preceding_kernels())
 
@@ -118,7 +119,7 @@ class KernelGroupGenerator:
 
         return "\n".join(decl_removed_duplicates)
 
-    def generate_kernel_body_code(self) -> str:
+    def generate_kernel_body_code(self, ignore_shared_outer_loops: bool = False) -> str:
 
         def _tab_code(code: str) -> str:
             return "\n".join([
@@ -164,13 +165,41 @@ class KernelGroupGenerator:
 
         kernels = self.group.kernels
         full_code = ""
-        outer_loops = self.group.get_shared_outer_loop_contexts()
+
+        if not ignore_shared_outer_loops:
+            outer_loops = self.group.get_shared_outer_loop_contexts()
+        else:
+            outer_loops = []
 
         while len(kernels) > 0:
             code, kernels = _generate_body_for_kernel(kernels, outer_loops)
             full_code += code + "\n"
 
         return full_code
+
+    def generate_omp_pragma(self) -> str:
+        shared_loops = self.group.get_shared_outer_loop_contexts()
+        if len(shared_loops) == 0:
+            return ""
+
+        written_vars = self.written_vars_finder.find_variables_written_to(self.group.kernels)
+
+        local_vars = [
+            var 
+            for var in self.used_vars_finder.find_used_vars(self.group.kernels)
+            if var in written_vars and not var.type().is_array()]
+
+        nested_loop_vars = [ctx.get_iteration_variable() for ctx in shared_loops][1:]
+
+        private_vars = local_vars + nested_loop_vars
+
+        if private_vars:
+            private_vars_str = ", ".join([self.variable_namer.format_name(var) for var in private_vars])
+            return f"#pragma omp parallel for private({private_vars_str})\n"
+        else:
+            return f"#pragma omp parallel for\n"
+
+
 
     def _get_outer_space_index_calculation_code(self) -> str:
         missing_steps_vars = [

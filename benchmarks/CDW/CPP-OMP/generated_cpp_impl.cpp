@@ -37,7 +37,8 @@ extern "C" {
 
         zero = 0.0;
         half = 0.5;
-        #pragma omp parallel for schedule(static) private(i, j)
+        
+        #pragma omp parallel for private(j, i)
         for (k = 2; k <= (wnz + 1); k++) {
             for (j = 2; j <= (wny + 1); j++) {
                 for (i = 2; i <= (wnx + 1); i++) {
@@ -49,7 +50,8 @@ extern "C" {
         ax = (0.25 / dxmin);
         ay = (0.25 / dymin);
         az = (0.25 / dzmin);
-        #pragma omp parallel for schedule(static) private(i, j)
+        
+        #pragma omp parallel for private(j, i)
         for (k = 2; k <= (wnz + 1); k++) {
             for (j = 2; j <= (wny + 1); j++) {
                 for (i = 2; i <= (wnx + 1); i++) {
@@ -61,7 +63,8 @@ extern "C" {
         ax = (0.125 / dxmin);
         ay = (0.125 / dymin);
         az = (0.5 / dzmin);
-        #pragma omp parallel for schedule(static) private(i, j, uadv, vadv)
+        
+        #pragma omp parallel for private(uadv, vadv, j, i)
         for (k = 2; k <= (wnz + 1); k++) {
             for (j = 2; j <= (wny + 1); j++) {
                 for (i = 2; i <= (wnx + 1); i++) {
@@ -72,7 +75,7 @@ extern "C" {
             }
         }
         
-        #pragma omp parallel for schedule(static) private(i, j)
+        #pragma omp parallel for private(j, i)
         for (k = 2; k <= (wnz + 1); k++) {
             for (j = 2; j <= (wny + 1); j++) {
                 for (i = 2; i <= (wnx + 1); i++) {

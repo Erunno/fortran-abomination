@@ -11,22 +11,24 @@ per-case and per-variant details are factored into small, reusable include files
 
 1. [Quick Start](#1-quick-start)
 2. [Prerequisites](#2-prerequisites)
-3. [Running a Single Benchmark](#3-running-a-single-benchmark)
-4. [Automated Benchmark Runner](#4-automated-benchmark-runner)
-5. [Correctness Tests](#5-correctness-tests)
-6. [Generating Figures](#6-generating-figures)
-7. [Directory Structure](#7-directory-structure)
-8. [Architecture](#8-architecture)  
-   8.1 [Build System](#81-build-system)  
-   8.2 [Source Layout per Case](#82-source-layout-per-case)  
-   8.3 [Benchmark Driver](#83-benchmark-driver)  
-   8.4 [Benchmark Runner](#84-benchmark-runner)  
-   8.5 [Correctness Test Runner](#85-correctness-test-runner)  
-   8.6 [Graph Generation](#86-graph-generation)
-9. [Adding a New Case](#9-adding-a-new-case)
-10. [Adding a New Variant](#10-adding-a-new-variant)
-11. [CSV Output Format](#11-csv-output-format)
-12. [Troubleshooting](#12-troubleshooting)
+3. [Source Generation](#3-source-generation)
+4. [Running a Single Benchmark](#4-running-a-single-benchmark)
+5. [Automated Benchmark Runner](#5-automated-benchmark-runner)
+6. [Correctness Tests](#6-correctness-tests)
+7. [Generating Figures](#7-generating-figures)
+8. [Directory Structure](#8-directory-structure)
+9. [Architecture](#9-architecture)  
+   9.1 [Build System](#91-build-system)  
+   9.2 [Source Layout per Case](#92-source-layout-per-case)  
+   9.3 [Source Generator](#93-source-generator)  
+   9.4 [Benchmark Driver](#94-benchmark-driver)  
+   9.5 [Benchmark Runner](#95-benchmark-runner)  
+   9.6 [Correctness Test Runner](#96-correctness-test-runner)  
+   9.7 [Graph Generation](#97-graph-generation)
+10. [Adding a New Case](#10-adding-a-new-case)
+11. [Adding a New Variant](#11-adding-a-new-variant)
+12. [CSV Output Format](#12-csv-output-format)
+13. [Troubleshooting](#13-troubleshooting)
 
 ---
 
@@ -37,11 +39,18 @@ per-case and per-variant details are factored into small, reusable include files
 make CASE=CVD VARIANT=Fortran
 ./bin/CVD_Fortran_NX64_NY64_NZ64_NITER100_NWARMUP5/benchmark
 
+# (Re-)generate all CUDA / C++ / C++-OMP sources from the Fortran originals
+source ../venv/bin/activate
+python generate_all_sources.py
+
+# Build and run a single benchmark (plain Fortran, default grid 64×64×64)
+make CASE=CVD VARIANT=Fortran
+./bin/CVD_Fortran_NX64_NY64_NZ64_NITER100_NWARMUP5/benchmark
+
 # Run all cases/variants/grids automatically → results.csv
 python run_bechmarks.py > results.csv
 
-# Generate publication-quality figures from results.csv
-source ../venv/bin/activate
+# Generate figures from results.csv
 python graphs/plot_benchmarks.py
 # → graphs/figs/grid_<NX>x<NY>x<NZ>_niter<N>.{png,pdf}
 ```
@@ -65,9 +74,77 @@ The Fortran compiler must support:
 
 For CUDA builds, `nvcc` must be on `PATH` or pointed to via `CUDA_HOME`.
 
+For source generation, the `fort_to_cuda` compiler (see `compiler/`) must be
+installable as a Python package — `pip install -e compiler/` or via the
+repository venv.
+
 ---
 
-## 3. Running a Single Benchmark
+## 3. Source Generation
+
+The `CPP`, `CPP-OMP`, and `CUDA` variants rely on auto-generated source files
+produced by the `fort_to_cuda` compiler (see `compiler/README.md`).  The script
+`generate_all_sources.py` runs the compiler for every case and places the
+results in the correct variant directories.  The generated files are committed
+to the repository so that benchmarks can be built without the compiler
+toolchain — only re-run this script when you change the Fortran originals or
+update the compiler itself.
+
+### What gets generated
+
+For each case the following files are written (existing files are overwritten):
+
+| Destination | Content |
+|-------------|---------|
+| `CUDA/generated_code.cu` | CUDA `__global__` kernels + host wrapper |
+| `CUDA/<case>.f90` | Fortran `iso_c_binding` interface module |
+| `CPP-OMP/generated_cpp_impl.cpp` | C++ kernel with `#pragma omp parallel for` |
+| `CPP-OMP/<case>.f90` | Same Fortran interface as CUDA |
+| `CPP/generated_cpp_impl.cpp` | C++ kernel — `#pragma omp` lines stripped |
+| `CPP/<case>.f90` | Same Fortran interface as CUDA |
+
+The `Fortran/` and `Fortran-OMP/` variants contain hand-written Fortran and
+are never touched by this script.
+
+### Running
+
+```bash
+# Activate the venv (required — compiler package must be importable)
+source ../venv/bin/activate
+
+# Generate all cases
+python generate_all_sources.py
+
+# Generate specific cases only
+python generate_all_sources.py CDU CDV
+
+# Show compiler diagnostics
+python generate_all_sources.py --verbose
+```
+
+Progress is printed per case and variant:
+
+```
+[CDU] Running compiler …
+[CDU] CUDA    → generated_code.cu, cdu.f90
+[CDU] CPP-OMP → generated_cpp_impl.cpp (#pragma omp kept), cdu.f90
+[CDU] CPP     → generated_cpp_impl.cpp (#pragma omp stripped), cdu.f90
+...
+All done.
+```
+
+If the compiler fails for a case, the error is printed and the script exits
+with code 1.  Use `--verbose` to see the full compiler output.
+
+### When to re-run
+
+- After editing any `<CASE>/Fortran/<case>.f90` source file.
+- After updating the compiler (`compiler/`) itself.
+- When adding a new case (see §10).
+
+---
+
+## 4. Running a Single Benchmark
 
 All builds are driven by the top-level `Makefile`.  The binary is placed under
 `bin/<BUILD_ID>/benchmark` where `BUILD_ID` encodes every parameter that affects
@@ -156,7 +233,7 @@ free_total_ms:    10.7
 
 ---
 
-## 4. Automated Benchmark Runner
+## 5. Automated Benchmark Runner
 
 `run_bechmarks.py` sweeps all configured combinations, builds missing binaries on
 demand, discards warm-up rounds, and writes a semicolon-separated CSV to stdout.
@@ -207,7 +284,7 @@ GPU; the CUDA binary will be compiled on the same node via `nvcc`.
 
 ---
 
-## 5. Correctness Tests
+## 6. Correctness Tests
 
 `run_tests.py` builds each variant on a small fixed grid (default 16×16×16),
 runs the kernel once with a deterministic initial condition, and compares every
@@ -265,7 +342,7 @@ All tests PASSED.
 
 ---
 
-## 6. Generating Figures
+## 7. Generating Figures
 
 `graphs/plot_benchmarks.py` reads `results.csv` and produces one figure per
 unique `(grid, iters)` combination.
@@ -303,11 +380,12 @@ controls the left-to-right order of the groups.
 
 ---
 
-## 7. Directory Structure
+## 8. Directory Structure
 
 ```
 benchmarks/
 ├── Makefile                  ← single unified build entry point
+├── generate_all_sources.py   ← regenerates CUDA/C++/C++-OMP sources from Fortran
 ├── run_bechmarks.py          ← automated runner → CSV
 ├── run_tests.py              ← correctness test runner
 ├── results.csv               ← latest benchmark results
@@ -358,9 +436,9 @@ benchmarks/
 
 ---
 
-## 8. Architecture
+## 9. Architecture
 
-### 8.1 Build System
+### 9.1 Build System
 
 The build system is split into three layers to keep per-case files minimal while
 giving full control from the command line.
@@ -412,7 +490,7 @@ whether a binary already exists without re-parsing Make output.
 The nvcc compile rule passes `-I$(CURDIR)/common` so every case can use it without
 copying the header.
 
-### 8.2 Source Layout per Case
+### 9.2 Source Layout per Case
 
 Each case directory contains:
 
@@ -425,6 +503,7 @@ Each case directory contains:
 | `Fortran-OMP/` | OpenMP-parallelised Fortran implementation |
 | `CUDA/` | CUDA implementation: a Fortran wrapper + generated `.cu` kernel || `CPP/` | C++ implementation: a Fortran wrapper (`iso_c_binding`) + generated `.cpp` kernel |
 | `CPP-OMP/` | Same as CPP with `#pragma omp parallel for` on all outer loop nests |
+
 The Fortran source in each variant must export a module named `MomentumAdvection`
 that provides at minimum:
 
@@ -440,7 +519,32 @@ end module
 used in CUDA variants to trigger JIT compilation or other warm-up work before
 the timed section.
 
-### 8.3 Benchmark Driver
+### 9.3 Source Generator
+
+`generate_all_sources.py` bridges the compiler tool and the benchmark build system.
+
+```
+for each case (CDU, CDW, CDV):
+    locate <CASE>/Fortran/<case_src>         # the canonical Fortran kernel
+    run: python -m compiler                  # in a temporary directory
+         --input <case_src>                  # so no existing files are touched
+         --kernel <KERNEL_NAME>              # until all outputs are ready
+         --output-dir <tmpdir>
+         --no-common-header
+    copy generated_code.cu       → CUDA/
+    copy generated_interface.f90 → CUDA/<case>.f90
+                                 → CPP-OMP/<case>.f90
+                                 → CPP/<case>.f90
+    copy generated_cpp_impl.cpp  → CPP-OMP/   (verbatim, #pragma omp kept)
+    strip #pragma omp lines
+    copy stripped file           → CPP/
+```
+
+Using a temporary directory ensures that partial failures never leave variant
+directories in an inconsistent state — files are only written after the compiler
+successfully produces all three outputs.
+
+### 9.4 Benchmark Driver
 
 `CASE/main.f90` is compiled and linked by the top-level `Makefile`.  Grid
 dimensions and iteration counts are injected at compile time via preprocessor
@@ -456,7 +560,7 @@ The driver follows this pattern:
 6. Run `VAR_NITER` timed iterations
 7. Record `t_end`, compute and print timing
 
-### 8.4 Benchmark Runner
+### 9.5 Benchmark Runner
 
 `run_bechmarks.py` orchestrates the full sweep:
 
@@ -478,7 +582,7 @@ Parsing is variant-aware:
 All errors for a single combination are caught and reported to stderr; the loop
 continues to the next combination.
 
-### 8.5 Correctness Test Runner
+### 9.6 Correctness Test Runner
 
 `run_tests.py` drives `make` with `MAIN_SRC=test_main.f90` for each
 `(case, variant)` combination, using a fixed 16×16×16 grid and `NITER=1
@@ -487,7 +591,7 @@ per-variant and reported as `[SKIP]` without aborting the suite.
 
 Comparison is purely element-wise using Python built-ins (no numpy dependency).
 
-### 8.6 Graph Generation
+### 9.7 Graph Generation
 
 `graphs/plot_benchmarks.py` uses **matplotlib** to produce publication-quality
 figures.  One figure per `(grid, iters)` combination is generated.
@@ -504,7 +608,7 @@ Key design choices:
 
 ---
 
-## 9. Adding a New Case
+## 10. Adding a New Case
 
 1. **Create the case directory** and add the required files:
 
@@ -556,22 +660,36 @@ Key design choices:
 
 6. **Write `test_main.f90`** — copy from an existing case, updating the output
    array name and the `call` statement.  The file must print the interior of
-   the result array to stdout (see §5).
+   the result array to stdout (see §6).
 
-7. **Register in the runners** — add the new case name to `FUNCTIONS` in
-   `run_bechmarks.py` and to `CASES` in `run_tests.py`.
+7. **Register in the source generator** — add an entry to the `CASES` dict in
+   `generate_all_sources.py`:
 
-8. **Build and test**:
+   ```python
+   "NEWCASE": dict(fortran_src="newcase.f90", kernel="NewKernel", interface_dst="newcase.f90"),
+   ```
+
+8. **Generate the C++/CUDA sources**:
 
    ```bash
-   make CASE=NEWCASE VARIANT=Fortran
-   ./bin/NEWCASE_Fortran_.../benchmark
-   make test CASE=NEWCASE
+   source ../venv/bin/activate
+   python generate_all_sources.py NEWCASE
    ```
+
+9. **Register in the runners** — add the new case name to `FUNCTIONS` in
+   `run_bechmarks.py` and to `CASES` in `run_tests.py`.
+
+10. **Build and test**:
+
+    ```bash
+    make CASE=NEWCASE VARIANT=Fortran
+    ./bin/NEWCASE_Fortran_.../benchmark
+    make test CASE=NEWCASE
+    ```
 
 ---
 
-## 10. Adding a New Variant
+## 11. Adding a New Variant
 
 1. **Create `CASE/NEWVARIANT/`** for every case that should support it.
 
@@ -596,7 +714,7 @@ Key design choices:
 
 ---
 
-## 11. CSV Output Format
+## 12. CSV Output Format
 
 The runner writes semicolon-delimited rows.  Every numeric measurement is
 formatted as `mean+-stddev` (3 decimal places).  Empty fields (`;;`) indicate the
@@ -622,7 +740,7 @@ cuda_d2h_ms;cuda_d2h_gbps;cuda_free_ms;total_ms
 
 ---
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 **Build fails with "No rule to make target"**  
 Check that `CASE` is spelled exactly as its subdirectory name (case-sensitive) and

@@ -8,7 +8,17 @@
       "module": "compiler",
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "justMyCode": true
+      "justMyCode": true,
+      "args": [
+        "--input",
+        "fortran-stencils/elmm_cdv.f90",
+
+        "--output-dir",
+        "out",
+
+        "--kernel",
+        "CDV"
+      ]
     }
   ]
 }

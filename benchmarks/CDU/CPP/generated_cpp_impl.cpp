@@ -37,6 +37,7 @@ extern "C" {
 
         zero = 0.0;
         half = 0.5;
+        
         for (k = 2; k <= (unz + 1); k++) {
             for (j = 2; j <= (uny + 1); j++) {
                 for (i = 2; i <= (unx + 1); i++) {
@@ -48,6 +49,7 @@ extern "C" {
         ax = (0.25 / dxmin);
         ay = (0.25 / dymin);
         az = (0.25 / dzmin);
+        
         for (k = 2; k <= (unz + 1); k++) {
             for (j = 2; j <= (uny + 1); j++) {
                 for (i = 2; i <= (unx + 1); i++) {
@@ -59,6 +61,7 @@ extern "C" {
         ax = (0.5 / dxmin);
         ay = (0.125 / dymin);
         az = (0.125 / dzmin);
+        
         for (k = 2; k <= (unz + 1); k++) {
             for (j = 2; j <= (uny + 1); j++) {
                 for (i = 2; i <= (unx + 1); i++) {
