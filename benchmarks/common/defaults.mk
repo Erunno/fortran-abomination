@@ -22,8 +22,15 @@ FFLAGS       ?= -O3 -march=native -flto
 EXTRA_FFLAGS ?=
 
 # ---- C++ compiler & flags ---------------------------------
-CXX          ?= g++
-CXXFLAGS     ?= -O3 -march=native
+# Use the same GCC installation as gfortran to ensure consistent code generation,
+# ABI compatibility, and the ability to link LTO objects from both compilers.
+# Guard against make's built-in CXX=g++ default (same pattern as FC above).
+ifeq ($(origin CXX),default)
+  CXX = /usr/local/gcc152/bin/g++
+else
+  CXX ?= /usr/local/gcc152/bin/g++
+endif
+CXXFLAGS     ?= -O3 -march=native -flto
 EXTRA_CXXFLAGS ?=
 
 # ---- CUDA compiler & flags ---------------------------------

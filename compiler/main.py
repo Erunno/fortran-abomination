@@ -12,7 +12,7 @@ from compiler.kernels_finder import KernelFinder, SourceFilesCollection_FromFile
 from .fparser_tree_abstraction import FparserTree
 
 def main() -> None:
-    func = 'CDW'
+    func = 'CDU'
 
     # source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / "gol_module.f90"
     source_file = Path(__file__).resolve().parents[1] / "fortran-stencils" / f"elmm_{func.lower()}.f90"

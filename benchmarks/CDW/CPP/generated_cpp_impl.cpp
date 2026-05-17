@@ -13,10 +13,10 @@ extern "C" {
     }
 
     void cpp_CDW(
-        double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-        double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-        double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-        double* w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
+        double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+        double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+        double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+        double* __restrict__ w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
         int wnx,
         int wny,
         int wnz,

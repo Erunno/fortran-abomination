@@ -13,13 +13,13 @@ extern "C" {
     }
 
     void cpp_CDV(
-        double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-        double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-        double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
+        double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+        double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+        double* __restrict__ v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
         int vnx,
         int vny,
         int vnz,
-        double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+        double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
         double dxmin,
         double dymin,
         double dzmin

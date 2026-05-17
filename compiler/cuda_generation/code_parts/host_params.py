@@ -85,7 +85,7 @@ class ParamsGenerator:
 
         sizes_str = self._get_sizes_param_code_for(var)
 
-        return f"{cpp_type_str} {array_name_device}, {sizes_str}"
+        return f"{cpp_type_str} __restrict__ {array_name_device}, {sizes_str}"
 
 
     def _get_device_param_call_arg(self, var: Variable) -> str:
@@ -112,7 +112,9 @@ class ParamsGenerator:
         cpp_type_str = self.cpp_typer.get_cpp_type_str(var.type())
         dim = var.type().get_dim_count()
 
-        var_decl = f"{cpp_type_str} {self.variable_namer.format_name(var)}"
+        restrict = "__restrict__ " if var.type().is_array() else ""
+
+        var_decl = f"{cpp_type_str} {restrict}{self.variable_namer.format_name(var)}"
 
         if dim == 0:
             return var_decl    

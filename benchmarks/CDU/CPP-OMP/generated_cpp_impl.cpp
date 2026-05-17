@@ -13,13 +13,13 @@ extern "C" {
     }
 
     void cpp_CDU(
-        double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-        double* u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+        double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+        double* __restrict__ u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
         int unx,
         int uny,
         int unz,
-        double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-        double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+        double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+        double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
         double dxmin,
         double dymin,
         double dzmin

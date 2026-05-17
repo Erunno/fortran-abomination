@@ -12,11 +12,11 @@ namespace generated_kernels {
 
 __global__ 
 void kernel_group_1_device(
-    int vnx,
-    double zero,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int vny,
     int vnz,
+    int vnx,
+    double zero,
+    double* __restrict__ v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -65,16 +65,16 @@ void kernel_group_1_device(
 
 __global__ 
 void kernel_group_3_device(
-    double ax,
-    int vnx,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-    double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-    double ay,
     int vny,
     double az,
     int vnz,
+    int vnx,
+    double ax,
+    double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+    double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+    double* __restrict__ v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
+    double ay,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -123,16 +123,16 @@ void kernel_group_3_device(
 
 __global__ 
 void kernel_group_5_device(
-    double ax,
-    int vnx,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-    double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-    double ay,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
-    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     int vny,
     double az,
+    double ax,
     int vnz,
+    int vnx,
+    double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+    double ay,
+    double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+    double* __restrict__ v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -147,11 +147,11 @@ void kernel_group_5_device(
     }
 
     // Declarations of local variables used in the kernel body
-    double uadv;
-    double wadv;
     int i;
     int j;
     int k;
+    double uadv;
+    double wadv;
 
     // Map the 1D index back to column-major multi-dimensional coordinates
     constexpr int k_step = 1;
@@ -185,11 +185,11 @@ void kernel_group_5_device(
 
 __global__ 
 void kernel_group_6_device(
-    int vnx,
-    double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int vny,
     double half,
     int vnz,
+    int vnx,
+    double* __restrict__ v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -248,13 +248,13 @@ extern "C" {
     }
 
     void cpp_CDV(
-        double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-        double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-        double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
+        double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+        double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+        double* __restrict__ v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
         int vnx,
         int vny,
         int vnz,
-        double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+        double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
         double dxmin,
         double dymin,
         double dzmin
@@ -284,10 +284,10 @@ extern "C" {
 
         // Declare local variables
         double zero;
-        double az;
-        double ax;
-        double ay;
         double half;
+        double ax;
+        double az;
+        double ay;
 
         // 3. Launch the CUDA Kernels
         measure_kernel_executions([&]() {
@@ -313,11 +313,11 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_1_device<<<blocksPerGrid, threadsPerBlock>>>(
+                vny,
+                vnz,
                 vnx,
                 zero,
                 v2_device, v2_dim1, v2_dim2, v2_dim3,
-                vny,
-                vnz,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -349,16 +349,16 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_3_device<<<blocksPerGrid, threadsPerBlock>>>(
-                ax,
-                vnx,
-                v_device, v_dim1, v_dim2, v_dim3,
-                u_device, u_dim1, u_dim2, u_dim3,
-                w_device, w_dim1, w_dim2, w_dim3,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
-                ay,
                 vny,
                 az,
                 vnz,
+                vnx,
+                ax,
+                w_device, w_dim1, w_dim2, w_dim3,
+                v_device, v_dim1, v_dim2, v_dim3,
+                u_device, u_dim1, u_dim2, u_dim3,
+                v2_device, v2_dim1, v2_dim2, v2_dim3,
+                ay,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -390,16 +390,16 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_5_device<<<blocksPerGrid, threadsPerBlock>>>(
-                ax,
-                vnx,
-                v_device, v_dim1, v_dim2, v_dim3,
-                u_device, u_dim1, u_dim2, u_dim3,
-                ay,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
-                w_device, w_dim1, w_dim2, w_dim3,
                 vny,
                 az,
+                ax,
                 vnz,
+                vnx,
+                w_device, w_dim1, w_dim2, w_dim3,
+                ay,
+                v_device, v_dim1, v_dim2, v_dim3,
+                u_device, u_dim1, u_dim2, u_dim3,
+                v2_device, v2_dim1, v2_dim2, v2_dim3,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -428,11 +428,11 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_6_device<<<blocksPerGrid, threadsPerBlock>>>(
-                vnx,
-                v2_device, v2_dim1, v2_dim2, v2_dim3,
                 vny,
                 half,
                 vnz,
+                vnx,
+                v2_device, v2_dim1, v2_dim2, v2_dim3,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,

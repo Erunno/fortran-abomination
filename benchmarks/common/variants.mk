@@ -19,12 +19,12 @@ else ifeq ($(VARIANT),CUDA)
 
 else ifeq ($(VARIANT),CPP)
   VARIANT_FFLAGS   =
-  VARIANT_LDFLAGS  = -lstdc++
+  VARIANT_LDFLAGS  = -static-libstdc++
   VARIANT_CXXFLAGS =
 
 else ifeq ($(VARIANT),CPP-OMP)
   VARIANT_FFLAGS   = -fopenmp
-  VARIANT_LDFLAGS  = -lstdc++ -fopenmp
+  VARIANT_LDFLAGS  = -static-libstdc++ -fopenmp
   VARIANT_CXXFLAGS = -fopenmp
 
 else

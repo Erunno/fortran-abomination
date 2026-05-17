@@ -12,11 +12,11 @@ namespace generated_kernels {
 
 __global__ 
 void kernel_group_1_device(
+    int wny,
     int wnz,
     int wnx,
     double zero,
-    double* w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
-    int wny,
+    double* __restrict__ w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -65,15 +65,15 @@ void kernel_group_1_device(
 
 __global__ 
 void kernel_group_3_device(
-    double* w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
-    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-    int wnz,
+    int wny,
     double az,
+    int wnz,
     int wnx,
     double ax,
-    double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-    int wny,
+    double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+    double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+    double* __restrict__ w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
     double ay,
     int k_from, int k_to,
     int j_from, int j_to,
@@ -124,15 +124,15 @@ void kernel_group_3_device(
 __global__ 
 void kernel_group_5_device(
     double az,
-    double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-    double* w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
-    int wnz,
-    double ax,
-    int wnx,
-    double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-    double ay,
-    double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
     int wny,
+    double ax,
+    int wnz,
+    int wnx,
+    double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+    double ay,
+    double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+    double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+    double* __restrict__ w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -147,11 +147,11 @@ void kernel_group_5_device(
     }
 
     // Declarations of local variables used in the kernel body
-    double uadv;
-    double vadv;
     int i;
     int j;
     int k;
+    double uadv;
+    double vadv;
 
     // Map the 1D index back to column-major multi-dimensional coordinates
     constexpr int k_step = 1;
@@ -186,10 +186,10 @@ void kernel_group_5_device(
 __global__ 
 void kernel_group_6_device(
     double half,
+    int wny,
     int wnz,
     int wnx,
-    double* w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
-    int wny,
+    double* __restrict__ w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -248,10 +248,10 @@ extern "C" {
     }
 
     void cpp_CDW(
-        double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-        double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-        double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
-        double* w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
+        double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+        double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+        double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+        double* __restrict__ w2, size_t w2_dim1, size_t w2_dim2, size_t w2_dim3,
         int wnx,
         int wny,
         int wnz,
@@ -260,34 +260,34 @@ extern "C" {
         double dzmin
     ) {
         // 1. Allocate memory on the GPU (Device)
-        double* v_device;
         double* w_device;
         double* w2_device;
         double* u_device;
+        double* v_device;
 
         measure_alloc([&]() {
-        CUCH(cudaMalloc(&v_device, (sizeof(double) * v_dim1 * v_dim2 * v_dim3)));
         CUCH(cudaMalloc(&w_device, (sizeof(double) * w_dim1 * w_dim2 * w_dim3)));
         CUCH(cudaMalloc(&w2_device, (sizeof(double) * w2_dim1 * w2_dim2 * w2_dim3)));
         CUCH(cudaMalloc(&u_device, (sizeof(double) * u_dim1 * u_dim2 * u_dim3)));
+        CUCH(cudaMalloc(&v_device, (sizeof(double) * v_dim1 * v_dim2 * v_dim3)));
         });
 
-        size_t total_h2d_bytes = (sizeof(double) * v_dim1 * v_dim2 * v_dim3) + (sizeof(double) * w_dim1 * w_dim2 * w_dim3) + (sizeof(double) * w2_dim1 * w2_dim2 * w2_dim3) + (sizeof(double) * u_dim1 * u_dim2 * u_dim3);
+        size_t total_h2d_bytes = (sizeof(double) * w_dim1 * w_dim2 * w_dim3) + (sizeof(double) * w2_dim1 * w2_dim2 * w2_dim3) + (sizeof(double) * u_dim1 * u_dim2 * u_dim3) + (sizeof(double) * v_dim1 * v_dim2 * v_dim3);
 
         // 2. Copy inputs from Host (CPU) to Device (GPU)
         measure_h2d(total_h2d_bytes, [&]() {
-        CUCH(cudaMemcpy(v_device, v, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaMemcpyHostToDevice));
         CUCH(cudaMemcpy(w_device, w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaMemcpyHostToDevice));
         CUCH(cudaMemcpy(w2_device, w2, (sizeof(double) * w2_dim1 * w2_dim2 * w2_dim3), cudaMemcpyHostToDevice));
         CUCH(cudaMemcpy(u_device, u, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaMemcpyHostToDevice));
+        CUCH(cudaMemcpy(v_device, v, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaMemcpyHostToDevice));
         });
 
         // Declare local variables
-        double ay;
-        double zero;
-        double half;
         double az;
+        double half;
+        double ay;
         double ax;
+        double zero;
 
         // 3. Launch the CUDA Kernels
         measure_kernel_executions([&]() {
@@ -313,11 +313,11 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_1_device<<<blocksPerGrid, threadsPerBlock>>>(
+                wny,
                 wnz,
                 wnx,
                 zero,
                 w2_device, w2_dim1, w2_dim2, w2_dim3,
-                wny,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -349,15 +349,15 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_3_device<<<blocksPerGrid, threadsPerBlock>>>(
-                w2_device, w2_dim1, w2_dim2, w2_dim3,
-                w_device, w_dim1, w_dim2, w_dim3,
-                wnz,
+                wny,
                 az,
+                wnz,
                 wnx,
                 ax,
-                u_device, u_dim1, u_dim2, u_dim3,
+                w_device, w_dim1, w_dim2, w_dim3,
                 v_device, v_dim1, v_dim2, v_dim3,
-                wny,
+                u_device, u_dim1, u_dim2, u_dim3,
+                w2_device, w2_dim1, w2_dim2, w2_dim3,
                 ay,
                 k_from, k_to,
                 j_from, j_to,
@@ -391,15 +391,15 @@ extern "C" {
             // 4. Launch the CUDA kernel
             kernel_group_5_device<<<blocksPerGrid, threadsPerBlock>>>(
                 az,
-                w_device, w_dim1, w_dim2, w_dim3,
-                w2_device, w2_dim1, w2_dim2, w2_dim3,
-                wnz,
+                wny,
                 ax,
+                wnz,
                 wnx,
-                u_device, u_dim1, u_dim2, u_dim3,
+                w_device, w_dim1, w_dim2, w_dim3,
                 ay,
                 v_device, v_dim1, v_dim2, v_dim3,
-                wny,
+                u_device, u_dim1, u_dim2, u_dim3,
+                w2_device, w2_dim1, w2_dim2, w2_dim3,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -429,10 +429,10 @@ extern "C" {
             // 4. Launch the CUDA kernel
             kernel_group_6_device<<<blocksPerGrid, threadsPerBlock>>>(
                 half,
+                wny,
                 wnz,
                 wnx,
                 w2_device, w2_dim1, w2_dim2, w2_dim3,
-                wny,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -456,10 +456,10 @@ extern "C" {
 
         // 6. Free the GPU memory
         measure_free([&]() {
-        CUCH(cudaFree(v_device));
         CUCH(cudaFree(w_device));
         CUCH(cudaFree(w2_device));
         CUCH(cudaFree(u_device));
+        CUCH(cudaFree(v_device));
         });
     }
 }

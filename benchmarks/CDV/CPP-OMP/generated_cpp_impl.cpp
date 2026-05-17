@@ -13,13 +13,13 @@ extern "C" {
     }
 
     void cpp_CDV(
-        double* u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
-        double* v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
-        double* v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
+        double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
+        double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
+        double* __restrict__ v2, size_t v2_dim1, size_t v2_dim2, size_t v2_dim3,
         int vnx,
         int vny,
         int vnz,
-        double* w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
+        double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
         double dxmin,
         double dymin,
         double dzmin
@@ -37,7 +37,6 @@ extern "C" {
 
         zero = 0.0;
         half = 0.5;
-        #pragma omp parallel for collapse(3) schedule(static)
         for (k = 2; k <= (vnz + 1); k++) {
             for (j = 2; j <= (vny + 1); j++) {
                 for (i = 2; i <= (vnx + 1); i++) {
@@ -49,7 +48,6 @@ extern "C" {
         ax = (0.25 / dxmin);
         ay = (0.25 / dymin);
         az = (0.25 / dzmin);
-        #pragma omp parallel for collapse(3) schedule(static)
         for (k = 2; k <= (vnz + 1); k++) {
             for (j = 2; j <= (vny + 1); j++) {
                 for (i = 2; i <= (vnx + 1); i++) {
@@ -61,7 +59,6 @@ extern "C" {
         ax = (0.125 / dxmin);
         ay = (0.5 / dymin);
         az = (0.125 / dzmin);
-        #pragma omp parallel for collapse(3) schedule(static) private(uadv, wadv)
         for (k = 2; k <= (vnz + 1); k++) {
             for (j = 2; j <= (vny + 1); j++) {
                 for (i = 2; i <= (vnx + 1); i++) {
@@ -72,7 +69,6 @@ extern "C" {
             }
         }
         
-        #pragma omp parallel for collapse(3) schedule(static)
         for (k = 2; k <= (vnz + 1); k++) {
             for (j = 2; j <= (vny + 1); j++) {
                 for (i = 2; i <= (vnx + 1); i++) {
