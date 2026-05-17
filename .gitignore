@@ -5,3 +5,4 @@
 *.out
 /venv
 /out
+**/pure_fortran_app
