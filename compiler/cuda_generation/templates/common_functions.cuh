@@ -7,6 +7,12 @@
 #include <numeric>
 #include <vector>
 
+#if defined(__CUDACC__)
+    #define CUDA_CALLABLE __host__ __device__
+#else
+    #define CUDA_CALLABLE
+#endif
+
 #define CUCH(call) \
     do { \
         cudaError_t err = call; \
@@ -21,7 +27,7 @@ namespace generated_kernels::indexing {
 
 template <size_t Step, size_t N>
 struct StaticLoop {
-    __device__ __forceinline__ static void iterate(const size_t* arr, size_t& linear_idx, size_t& stride) {
+    CUDA_CALLABLE static void iterate(const size_t* arr, size_t& linear_idx, size_t& stride) {
         size_t current_index = arr[Step] - 1;
         size_t current_dim_size = arr[Step + N];
 
@@ -34,13 +40,13 @@ struct StaticLoop {
 
 template <size_t N>
 struct StaticLoop<N, N> {
-    __device__ __forceinline__ static void iterate(const size_t* arr, size_t& linear_idx, size_t& stride) {
+    CUDA_CALLABLE static void iterate(const size_t* arr, size_t& linear_idx, size_t& stride) {
         // Do nothing. The loop is finished.
     }
 };
 
 template <typename... Args>
-__device__ __forceinline__ size_t F_IDX(Args... args) {
+CUDA_CALLABLE size_t F_IDX(Args... args) {
     constexpr size_t total_args = sizeof...(Args);
     
     static_assert(total_args % 2 == 0, "IDX requires N indices followed by N dimensions.");

@@ -1,8 +1,4 @@
-#include "common_functions.cuh"
-
 namespace generated_kernels {
-
-using namespace generated_kernels::indexing;
 
 // The wrapper function called by Fortran
 extern "C" {
