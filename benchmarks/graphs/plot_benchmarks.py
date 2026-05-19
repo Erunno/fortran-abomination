@@ -9,8 +9,10 @@ Message the figure conveys:
   "Memory transfer dominates CUDA cost; the kernel itself is blazing fast."
 """
 
+import argparse
 import csv
 import re
+import shutil
 from collections import defaultdict
 from pathlib import Path
 
@@ -19,7 +21,11 @@ matplotlib.use('Agg')
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib.legend_handler import HandlerPatch
 import numpy as np
+
+# ── LaTeX detection ──────────────────────────────────────────────────────────────
+_USE_LATEX = bool(shutil.which('latex') or shutil.which('pdflatex'))
 
 # ── Paths ───────────────────────────────────────────────────────────────────────
 SCRIPT_DIR  = Path(__file__).parent
@@ -29,16 +35,16 @@ FIGS_DIR.mkdir(exist_ok=True)
 
 # ── Publication style ───────────────────────────────────────────────────────────
 plt.rcParams.update({
-    'font.family':              'sans-serif',
-    'font.size':                9,
-    'axes.labelsize':           10,
-    'axes.titlesize':           10,
+    'font.family':              'sans-serif' if not _USE_LATEX else 'Computer Modern',
+    'font.size':                13,
+    'axes.labelsize':           14,
+    'axes.titlesize':           18,
     'axes.titleweight':         'normal',
     'axes.labelweight':         'normal',
-    'xtick.labelsize':          11,
-    'ytick.labelsize':          9,
-    'legend.fontsize':          8.5,
-    'legend.title_fontsize':    9,
+    'xtick.labelsize':          15,
+    'ytick.labelsize':          13,
+    'legend.fontsize':          16,
+    'legend.title_fontsize':    15,
     'legend.framealpha':        0.95,
     'legend.edgecolor':         '#cccccc',
     'legend.borderpad':         0.6,
@@ -59,27 +65,45 @@ plt.rcParams.update({
     'savefig.pad_inches':       0.08,
 })
 
+if _USE_LATEX:
+    plt.rcParams.update({'text.usetex': True})
+
+
+def _t(s: str) -> str:
+    """Replace Unicode chars with LaTeX-safe equivalents when usetex is active."""
+    if not _USE_LATEX:
+        return s
+    for old, new in [('\u202f', r'\,'), ('×', r'$\times$'),
+                     ('—', '---'), ('↔', r'$\leftrightarrow$')]:
+        s = s.replace(old, new)
+    return s
+
+
+_YLABEL = (r'Execution time (s / Gcell$\cdot$iter)'
+           if _USE_LATEX else
+           'Execution time (s / Gcell\u00b7iter)')
+
 # ── Layout ──────────────────────────────────────────────────────────────────────
 VARIANT_ORDER  = ['Fortran', 'CPP', 'Fortran-OMP', 'CPP-OMP', 'CUDA']
 FUNCTION_ORDER = ['CDW', 'CDU', 'CDV', 'CVD']
 
 # DESIGN FIX: Slimmer bars, wider gap between groups
-BAR_WIDTH  = 0.13   
-GROUP_GAP  = 0.25   
+BAR_WIDTH  = 0.05
+GROUP_GAP  = 0.22
 
 # ── Palette — Professional, story-driven colors ─────────────────────────────────
-# CPU variants get professional, understated cool tones
-C_FORTRAN     = '#1F3A5E'   # Deep Navy
-C_CPP         = '#4A7C99'   # Steel Muted Blue
-C_FORTRAN_OMP = '#1F3A5E'   # Navy (distinguished by hatch)
-C_CPP_OMP     = '#4A7C99'   # Steel (distinguished by hatch)
+# CPU variants — medium-bright blues so dark hatch lines remain visible
+C_FORTRAN     = '#3571B5'   # Medium Blue
+C_CPP         = '#70AED8'   # Light Sky Blue
+C_FORTRAN_OMP = '#3571B5'   # Medium Blue (distinguished by hatch)
+C_CPP_OMP     = '#70AED8'   # Light Sky Blue (distinguished by hatch)
 
 # CUDA kernel gets a punchy accent color to draw the eye to the "blazing fast" part
 C_KERNEL      = '#D7263D'   # Sharp Crimson Red
 
 # Memory remains muted to show weight without dominating visually
-C_MEM_MOV     = '#C4C4C4'   # Soft Grey
-C_MEM_ALLOC   = '#EAEAEA'   # Very Light Grey
+C_MEM_MOV     = '#C4C4C4'   # Muted Blue-Grey
+C_MEM_ALLOC   = '#EAEAEA'   # Very Light Blue-Grey
 
 # Hatches for accessibility and OpenMP distinction
 H_FORTRAN     = ''
@@ -92,14 +116,33 @@ H_ALLOC       = '....'
 
 ECOLOR = '#404040'          # Slightly softer error bar color
 
+
+class _MemPatch(mpatches.Patch):
+    """Marker subclass so the legend handler can identify memory-bar patches."""
+    pass
+
+
+class _WhiteHatchHandler(HandlerPatch):
+    """Draws the legend swatch in two layers: white hatch lines + dark border."""
+    def create_artists(self, legend, orig_handle, xdescent, ydescent,
+                       width, height, fontsize, trans):
+        artists = super().create_artists(
+            legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans)
+        artists[0].set_edgecolor('white')          # hatch lines → white
+        border = mpatches.Rectangle(
+            (-xdescent, -ydescent), width, height,
+            linewidth=0.8, edgecolor='#1e1e1e', fill=False, transform=trans)
+        return artists + [border]
+
+
 LEGEND_PATCHES = [
-    mpatches.Patch(facecolor=C_FORTRAN,     hatch=H_FORTRAN,     edgecolor='white', label='Fortran (serial)'),
-    mpatches.Patch(facecolor=C_CPP,         hatch=H_CPP,         edgecolor='white', label='C++ (serial)'),
-    mpatches.Patch(facecolor=C_FORTRAN_OMP, hatch=H_FORTRAN_OMP, edgecolor='white', label='Fortran (OpenMP)'),
-    mpatches.Patch(facecolor=C_CPP_OMP,     hatch=H_CPP_OMP,     edgecolor='white', label='C++ (OpenMP)'),
-    mpatches.Patch(facecolor=C_KERNEL,      hatch=H_KERNEL,      edgecolor='white', label='CUDA — kernel'),
-    mpatches.Patch(facecolor=C_MEM_MOV,     hatch=H_MEM,         edgecolor='white', label='CUDA — data transfer (H↔D)'),
-    mpatches.Patch(facecolor=C_MEM_ALLOC,   hatch=H_ALLOC,       edgecolor='white', label='CUDA — malloc / free'),
+    mpatches.Patch(facecolor=C_FORTRAN,     hatch=H_FORTRAN,     edgecolor='#1e1e1e', label='Fortran (serial)'),
+    mpatches.Patch(facecolor=C_CPP,         hatch=H_CPP,         edgecolor='#1e1e1e', label='C++ (serial)'),
+    mpatches.Patch(facecolor=C_FORTRAN_OMP, hatch=H_FORTRAN_OMP, edgecolor='#1e1e1e', label='Fortran (OpenMP)'),
+    mpatches.Patch(facecolor=C_CPP_OMP,     hatch=H_CPP_OMP,     edgecolor='#1e1e1e', label='C++ (OpenMP)'),
+    mpatches.Patch(facecolor=C_KERNEL,      hatch=H_KERNEL,      edgecolor='#1e1e1e', label=_t('CUDA \u2014 kernel')),
+    _MemPatch(facecolor=C_MEM_MOV,     hatch=H_MEM,         edgecolor='#1e1e1e', label=_t('CUDA \u2014 data transfer')),
+    _MemPatch(facecolor=C_MEM_ALLOC,   hatch=H_ALLOC,       edgecolor='#1e1e1e', label=_t('CUDA \u2014 malloc / free')),
 ]
 
 
@@ -148,8 +191,12 @@ def group_by_scenario(rows: list[dict]) -> dict:
 
 # ── Plotting ────────────────────────────────────────────────────────────────────
 
-def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
+def plot_scenario(key: tuple, rows: list[dict], out_stem: str,
+                  omit_title: bool = False,
+                  omit_x_description: bool = False,
+                  omit_error_bars: bool = False) -> None:
     gx, gy, gz, niter = key
+    norm = (gx * gy * gz * niter) / 1e6   # s per Gcell·iter
 
     lookup = {(r['function'], r['variant']): r for r in rows}
     present_funcs = {r['function'] for r in rows}
@@ -163,8 +210,8 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
     group_ctrs   = np.arange(n_funcs) * group_width
     offsets = (np.arange(n_variants) - (n_variants - 1) / 2) * BAR_WIDTH
 
-    fig_w = 4.0 + n_funcs * 2.2  
-    fig, ax = plt.subplots(figsize=(fig_w, 4.2))
+    fig_w = 4.0 + n_funcs * 2.2
+    fig, ax = plt.subplots(figsize=(fig_w, 3.4))
 
     for vi, variant in enumerate(VARIANT_ORDER):
         for fi, func in enumerate(funcs):
@@ -177,22 +224,26 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
                            capthick=0.8, zorder=6)
 
             if variant == 'CUDA':
-                kernel_ms = row['cuda_kernel_run'] or 0.0
-                mem_ms    = (row['cuda_h2d_ms'] or 0.0) + (row['cuda_d2h_ms'] or 0.0)
-                alloc_ms  = (row['cuda_malloc_ms'] or 0.0) + (row['cuda_free_ms'] or 0.0)
-                total_std = row['total_ms_std'] or 0.0
+                kernel_ms = (row['cuda_kernel_run'] or 0.0) / norm
+                mem_ms    = ((row['cuda_h2d_ms'] or 0.0) + (row['cuda_d2h_ms'] or 0.0)) / norm
+                alloc_ms  = ((row['cuda_malloc_ms'] or 0.0) + (row['cuda_free_ms'] or 0.0)) / norm
+                total_std = (row['total_ms_std'] or 0.0) / norm
 
                 ax.bar(x, kernel_ms, BAR_WIDTH,
-                       color=C_KERNEL, hatch=H_KERNEL, edgecolor='white', linewidth=0.6, zorder=3)
+                       color=C_KERNEL, hatch=H_KERNEL, edgecolor='#1e1e1e', linewidth=0.8, zorder=3)
                 ax.bar(x, mem_ms, BAR_WIDTH, bottom=kernel_ms,
-                       color=C_MEM_MOV, hatch=H_MEM, edgecolor='white', linewidth=0.6, zorder=3)
+                       color=C_MEM_MOV, hatch=H_MEM, edgecolor='white', linewidth=0.8, zorder=3)
+                ax.bar(x, mem_ms, BAR_WIDTH, bottom=kernel_ms,
+                       fill=False, hatch='', edgecolor='#1e1e1e', linewidth=0.8, zorder=4)
                 ax.bar(x, alloc_ms, BAR_WIDTH, bottom=kernel_ms + mem_ms,
-                       color=C_MEM_ALLOC, hatch=H_ALLOC, edgecolor='white', linewidth=0.6, zorder=3,
-                       yerr=total_std, error_kw=ebar_kw)
+                       color=C_MEM_ALLOC, hatch=H_ALLOC, edgecolor='white', linewidth=0.8, zorder=3,
+                       **({} if omit_error_bars else {'yerr': total_std, 'error_kw': ebar_kw}))
+                ax.bar(x, alloc_ms, BAR_WIDTH, bottom=kernel_ms + mem_ms,
+                       fill=False, hatch='', edgecolor='#1e1e1e', linewidth=0.8, zorder=4)
 
             else:
-                total_ms  = row['total_ms'] or 0.0
-                total_std = row['total_ms_std'] or 0.0
+                total_ms  = (row['total_ms'] or 0.0) / norm
+                total_std = (row['total_ms_std'] or 0.0) / norm
                 palette = {
                     'Fortran':     (C_FORTRAN,     H_FORTRAN),
                     'Fortran-OMP': (C_FORTRAN_OMP, H_FORTRAN_OMP),
@@ -201,26 +252,28 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
                 }
                 c, h = palette.get(variant, (C_FORTRAN, H_FORTRAN))
                 ax.bar(x, total_ms, BAR_WIDTH,
-                       color=c, hatch=h, edgecolor='white', linewidth=0.6, zorder=3,
-                       yerr=total_std, error_kw=ebar_kw)
+                       color=c, hatch=h, edgecolor='#1e1e1e', linewidth=0.8, zorder=3,
+                       **({} if omit_error_bars else {'yerr': total_std, 'error_kw': ebar_kw}))
 
     # ── Axes decoration ────────────────────────────────────────────────────────
     ax.set_xticks(group_ctrs)
-    ax.set_xticklabels(funcs, fontsize=11)
-    ax.set_ylabel('Execution time (ms)', labelpad=6)
-    ax.set_xlabel('Kernel', labelpad=6)
+    ax.set_xticklabels(funcs)
+    ax.set_ylabel(_YLABEL, labelpad=6)
+    if not omit_x_description:
+        ax.set_xlabel('Kernel', labelpad=6)
     
     # Pad limits so bars don't hug the edges of the plot
     ax.set_xlim(group_ctrs[0] - group_width * 0.55,
                 group_ctrs[-1] + group_width * 0.55)
     ax.set_ylim(bottom=0)
     
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'{x:g}'))
 
-    ax.set_title(
-        f'Grid {gx}\u202f×\u202f{gy}\u202f×\u202f{gz},  {niter} iterations per call',
-        pad=10,
-    )
+    if not omit_title:
+        ax.set_title(
+            _t(f'Grid {gx}\u202f×\u202f{gy}\u202f×\u202f{gz},  {niter} iterations per call'),
+            pad=10,
+        )
 
     # ── Legend ─────────────────────────────────────────────────────────────────
     present_variants = {r['variant'] for r in rows}
@@ -234,9 +287,9 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
 
     visible_patches = [p for p in LEGEND_PATCHES if _variant_in_label(p.get_label())]
     
-    ax.legend(handles=visible_patches, loc='upper left', bbox_to_anchor=(1.02, 1),
+    ax.legend(handles=visible_patches, loc='center left', bbox_to_anchor=(1.02, 0.5),
               title='Implementation', ncol=1, handlelength=1.6, handleheight=1.1,
-              borderaxespad=0.)
+              borderaxespad=0., handler_map={_MemPatch: _WhiteHatchHandler()})
 
     fig.tight_layout()
 
@@ -251,10 +304,22 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str) -> None:
 # ── Entry point ─────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    if not RESULTS_CSV.exists():
-        raise FileNotFoundError(f'Results file not found: {RESULTS_CSV}')
+    parser = argparse.ArgumentParser(description='Plot benchmark results.')
+    parser.add_argument('--results', type=Path, default=None, metavar='FILE',
+                        help='Results CSV (default: ../results.csv)')
+    parser.add_argument('--omit-title', action='store_true',
+                        help='Omit the figure title')
+    parser.add_argument('--omit-x-description', action='store_true',
+                        help='Omit the x-axis "Kernel" label (keeps function names)')
+    parser.add_argument('--omit-error-bars', action='store_true',
+                        help='Omit error bars (±std) from all bars')
+    args = parser.parse_args()
 
-    rows   = load_csv(RESULTS_CSV)
+    results_csv = args.results if args.results is not None else RESULTS_CSV
+    if not results_csv.exists():
+        raise FileNotFoundError(f'Results file not found: {results_csv}')
+
+    rows   = load_csv(results_csv)
     groups = group_by_scenario(rows)
 
     print(f'Found {len(rows)} rows across {len(groups)} scenario(s).')
@@ -263,7 +328,9 @@ def main() -> None:
         gx, gy, gz, niter = key
         stem = f'grid_{gx}x{gy}x{gz}_niter{niter}'
         print(f'Plotting {stem} ...')
-        plot_scenario(key, groups[key], stem)
+        plot_scenario(key, groups[key], stem, omit_title=args.omit_title,
+                      omit_x_description=args.omit_x_description,
+                      omit_error_bars=args.omit_error_bars)
 
     print('Done.')
 
