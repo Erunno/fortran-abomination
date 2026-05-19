@@ -350,27 +350,40 @@ unique `(grid, iters)` combination.
 ```bash
 source ../venv/bin/activate
 python graphs/plot_benchmarks.py
+
+# Optional flags
+python graphs/plot_benchmarks.py \
+    --results path/to/results.csv  # override default CSV location
+    --omit-title                   # suppress the figure title
+    --omit-x-description           # suppress the x-axis "Kernel" label
+    --omit-error-bars              # suppress ±std error bars
 ```
 
 Figures are saved to `graphs/figs/` as both `.png` (300 dpi) and `.pdf`.  File
 names follow the pattern `grid_<NX>x<NY>x<NZ>_niter<N>.{png,pdf}`.
 
+The y-axis is normalised to **seconds per Gcell·iter** so results from different
+grid sizes and iteration counts are directly comparable.
+
 ### Figure design
 
 Each figure shows grouped bars — one group per kernel, up to five bars per group:
 
-| Bar | What it shows |
-|-----|--------------|
-| Blue (Fortran) | Total wall-clock time, serial Fortran |
-| Amber (Fortran-OMP) | Total wall-clock time, OpenMP Fortran |
-| CUDA (stacked) | Broken down: kernel (green) + data transfer H↔D (vermillion) + malloc/free (gray) |
-| Sky blue (CPP) | Total wall-clock time, serial C++ |
-| Reddish-purple (CPP-OMP) | Total wall-clock time, OpenMP C++ |
+| Bar | Colour | What it shows |
+|-----|--------|---------------|
+| Fortran (serial) | Medium blue, solid | Total wall-clock time |
+| Fortran (OpenMP) | Medium blue, `////` hatch | Total wall-clock time |
+| C++ (serial) | Light sky blue, solid | Total wall-clock time |
+| C++ (OpenMP) | Light sky blue, `\\\\` hatch | Total wall-clock time |
+| CUDA — kernel | Crimson red, stacked bottom | GPU kernel execution only |
+| CUDA — data transfer | Light grey, `xxxx` hatch, stacked | Host↔Device transfer (H2D + D2H) |
+| CUDA — malloc / free | Very light grey, `....` hatch, stacked top | Device allocation overhead |
+
+Serial and OpenMP variants share the same base colour and are distinguished by
+hatch pattern.  CUDA bars are stacked so the total bar height is the wall-clock
+cost of the full CUDA workflow.
 
 Error bars show ±1 standard deviation across `ROUNDS` runs.
-
-The palette follows the Wong (2011) colorblind-safe scheme; hatch patterns make
-bars distinguishable in greyscale print.
 
 ### Customising plots
 
@@ -598,10 +611,17 @@ figures.  One figure per `(grid, iters)` combination is generated.
 
 Key design choices:
 
-- **Wong (2011) colorblind-safe palette** for all bars
-- **Hatch patterns** ensure legibility in greyscale / print
-- **CUDA bars are stacked** (kernel + transfer + alloc) to show where time goes
-- **Error bars** (±1σ) on every bar
+- **Normalised y-axis** — values are converted to seconds per Gcell·iter so different
+  grid sizes are directly comparable
+- **Two-tone blue palette** — Fortran (medium blue) and C++ (light sky blue) share
+  a family; serial vs OpenMP variants are distinguished by hatch pattern alone
+- **Crimson accent for CUDA kernel** — draws the eye to the fast part of the CUDA
+  workflow; grey shades for the memory segments keep them visually subordinate
+- **Hatch patterns** (`////`, `\\\\`, `xxxx`, `....`) ensure legibility in greyscale print
+- **CUDA bars are stacked** (kernel + H↔D transfer + malloc/free) to show where time goes
+- **Error bars** (±1σ) on every bar, suppressible via `--omit-error-bars`
+- **External legend** — placed to the right of the plot area so bars are not obscured
+- **LaTeX rendering** — enabled automatically when `latex` or `pdflatex` is on `PATH`
 - **300 dpi PNG + vector PDF** output
 - **`rcParams`-based styling** — all typography and layout is set once at the top
   of the script, making global style changes trivial
