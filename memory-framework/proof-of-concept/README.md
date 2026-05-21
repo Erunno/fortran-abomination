@@ -1,104 +1,74 @@
-# Managed Memory PoC: Lazy GPU-Host Migration
+# Lazy Memory Management — Proof of Concept
 
-This project demonstrates a **hardware-intercepted memory management system** in C++ and Fortran. It uses OS-level page protection to implement a "Just-in-Time" data migration and evaluation pattern.
-
----
-
-## 1. Motivation: The GPU-Host Bottleneck
-
-In heterogeneous computing (CPU + GPU), data transfer over the PCIe bus is often the primary performance bottleneck.
-
-### The Problem
-
-Traditional programs often copy large buffers from the GPU to the Host "just in case" the CPU needs them. If the CPU only touches 1% of that data (or none at all), 99% of the transfer time was wasted.
-
-### The Solution: Lazy Migration
-
-By "locking" host-side memory at the OS level, we can:
-
-1. Keep data on the GPU by default.
-2. Allow the Fortran program to "think" it has the data.
-3. **Intercept** the exact moment the CPU attempts to read or write a specific memory address.
-4. Only then, migrate the data from the GPU to the Host and resume execution.
-
-This ensures that computation stays on the GPU as long as possible, and data moves **only if needed**.
+Self-contained demo of the `mprotect`/`SIGSEGV` mechanism described in the
+[parent README](../README.md).  No CUDA required — the "GPU computation" is
+replaced by a trivial doubling of the input array to keep the focus on the
+memory-protection machinery.
 
 ---
 
-## 2. Proof of Concept: The "Lazy Doubler"
+## Files
 
-The PoC simulates this behavior using two buffers: `in_arr` and `out_arr`.
-
-* **Input Buffer:** Set to `PROT_READ`. The CPU can read it without penalty. If the CPU tries to **write**, the hook fires to preserve/process the original data before it is lost.
-* **Output Buffer:** Set to `PROT_NONE`. Any access (Read or Write) triggers the hook.
-
-### Observed Behavior
-
-| Action | Hardware Permission | Result |
-| --- | --- | --- |
-| **Read Input** | `PROT_READ` | CPU succeeds immediately. No overhead. |
-| **Write Input** | `PROT_READ` | **Page Fault.** C++ handler fires, performs logic, unlocks page, resumes. |
-| **Read Output** | `PROT_NONE` | **Page Fault.** C++ handler fires, populates data, unlocks page, resumes. |
-| **Write Output** | `PROT_NONE` | **Page Fault.** C++ handler fires, unlocks page, resumes. |
+| File | Purpose |
+|------|---------|
+| `managed_mem.cpp` | `arm_memory_locks()`: sets `mprotect` permissions and registers the `SIGSEGV` handler |
+| `main.f90` | Fortran program that allocates two arrays, calls `arm_memory_locks`, then performs one of four access patterns |
+| `Makefile` | Cross-language build; `ARGS=N` selects the test case |
 
 ---
 
-## 3. Implementation Details
-
-### Page-Level Granularity
-
-The Operating System manages memory in **Pages** (typically **4096 bytes**). We cannot lock a single integer; we must lock the entire page the integer resides on.
-
-> **Technical Note:** If Fortran allocates memory that isn't "page-aligned" (starting at an address divisible by 4096), the C++ backend manually rounds the pointer down to the nearest page boundary before applying `mprotect`. This ensures compatibility with standard Fortran `allocate` statements.
-
-### The Signal Handler (`SIGSEGV`)
-
-When a protected page is touched, the CPU generates a hardware interrupt. The Linux kernel translates this into a `SIGSEGV` signal.
-
-Our C++ handler uses the `SA_SIGINFO` flag to receive a `siginfo_t` structure, which contains the **exact memory address** (`si_addr`) that caused the fault. This allows us to determine exactly which buffer needs to be synchronized.
-
-### The "Double-Fault" Trap
-
-When writing handlers, **all memory protection must be removed before calling I/O functions** (like `std::cout` or `print`).
-
-* **Reason:** High-level functions often use the heap.
-* **Risk:** If `std::cout` tries to access a memory page that we have locked, it will trigger a second Page Fault while inside the first handler, leading to an immediate `Segmentation Fault (core dumped)`.
-
----
-
-## 4. Developer Tutorial: How to Reproduce
-
-### File Structure
-
-* `managed_mem.cpp`: The C++ "Guardian" (Signal handler and `mprotect` logic).
-* `main.f90`: The Fortran "User" (Allocates memory and performs math).
-* `Makefile`: Handles cross-language compilation and linking.
-
-### Build and Test
-
-1. **Compile and Link:**
-```bash
-make
-
-```
-
-
-2. **Run Test Suite:**
-The executable accepts an argument `(1-4)` to isolate specific hardware behaviors.
+## Build and run
 
 ```bash
-./pure_fortran_app 1  # Test Read Input (Allowed)
-./pure_fortran_app 2  # Test Write Input (Intercepted)
-./pure_fortran_app 3  # Test Read Output (Intercepted)
-./pure_fortran_app 4  # Test Write Output (Intercepted)
+make          # builds ./pure_fortran_app
+make ARGS=3   # run test case 3 (read from output buffer)
 ```
-
-### Summary of Key APIs
-*   `sysconf(_SC_PAGESIZE)`: Finds the hardware page size.
-*   `mprotect(ptr, size, prot)`: Sets OS permissions (`PROT_NONE`, `PROT_READ`, `PROT_WRITE`).
-*   `sigaction(...)`: Registers the hardware fault interceptor.
-*   `c_f_pointer`: (Fortran) Maps a raw C address to a native Fortran array.
 
 ---
 
-**Note to future self:** If you see a `core dump` immediately after a "Trap Triggered" message, you likely added a print statement *before* the `mprotect` call that unlocks the memory. **Unlock first, then log.**
+## Test cases
+
+| Case | Fortran action | Trap? | What happens |
+|------|----------------|-------|--------------|
+| `1` | Read `in_arr(1)` | No | `in_arr` is `PROT_READ`; reads go through freely. Returns `15`. |
+| `2` | Write `in_arr(1) = 999` | Yes | Write to `PROT_READ` raises `SIGSEGV`. Handler runs the doubling (simulating H→D re-upload), restores access, then the write succeeds. |
+| `3` | Read `out_arr(1)` | Yes | `out_arr` is `PROT_NONE`. Handler runs the doubling (simulating D→H) and restores access. Returns `30` (= 15 × 2). |
+| `4` | Write `out_arr(1) = 888` | Yes | Same trap as case 3. Handler doubles `out_arr(2)` onward; `out_arr(1)` is then overwritten to `888` by Fortran. |
+
+---
+
+## Expected output for case 3
+
+```
+[C++ HOOK] Trap triggered at memory address: 0x...
+[C++ HOOK] Executing lazy doubling NOW!
+--- TEST 3: Reading Output ---
+Action: Reading out_arr(1)
+Result:  30
+Result: out_arr(2) =  60
+Expected: Hook fired. Result is 30.
+```
+
+The Fortran code that triggers the handler is a plain, unmodified array read:
+
+```fortran
+print *, out_arr(1)   ! raises SIGSEGV → handler fires → computation → resume
+```
+
+---
+
+## Notes
+
+**Page alignment** — `mprotect` operates at page granularity (4 096 bytes).
+Fortran `allocate` does not guarantee page-aligned addresses, so `managed_mem.cpp`
+rounds the pointer down to the nearest page boundary before calling `mprotect`.
+
+**`SA_SIGINFO`** — the handler uses this flag to receive `siginfo_t`, which
+carries the exact faulting address (`si_addr`), allowing the handler to identify
+which buffer was touched.
+
+**Double-fault trap** — if the program crashes with `Segmentation Fault (core dumped)`
+immediately after printing a trap message, there is likely an I/O call inside the
+handler that accesses still-protected heap memory.  Call `mprotect` to unlock all
+affected pages *before* any logging inside the handler.
+

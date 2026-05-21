@@ -5,7 +5,7 @@ CUDA and C++ implementations, together with a comprehensive benchmark suite and 
 proof-of-concept framework for transparent lazy GPU memory management.
 
 The project demonstrates that serial Fortran stencil code can be automatically
-offloaded to a GPU — with the generated kernel running **~50× faster** than serial
+offloaded to a GPU — with the generated kernel running **~40–60× faster** than serial
 Fortran — and identifies host↔device data transfer as the dominant remaining
 bottleneck, motivating the memory framework work.
 
@@ -146,30 +146,34 @@ All tests PASSED.
 ```bash
 cd benchmarks
 python graphs/plot_benchmarks.py
-# → graphs/figs/grid_256x256x256_niter100.{png,pdf}
+# → graphs/figs/grid_512x512x512_niter100.{png,pdf}
 ```
 
 ---
 
 ## Key Results
 
-Benchmarks were run on a 256×256×256 grid, 100 timed iterations per call.
+**Test machine:** single-socket AMD EPYC 9454 (48 cores), NVIDIA RTX PRO 6000
+Blackwell GPU; GCC 15.2.0 (`gfortran` / `g++`), CUDA 13.1.  Benchmarks were run
+on a 512×512×512 grid, 100 timed iterations per call.
 
-| Variant | CDU (ms) | CDW (ms) | CDV (ms) | Speedup vs Fortran |
-|---------|----------|----------|----------|--------------------|
-| Fortran (serial) | 4 498 | 5 122 | 4 749 | 1× (reference) |
-| C++ (serial) | 4 531 | 5 108 | 4 786 | ~1× |
-| Fortran-OMP | 568 | 643 | 596 | ~8× |
-| C++-OMP | 580 | 643 | 589 | ~8× |
-| **CUDA kernel only** | **128** | **128** | **127** | **~38×** |
-| CUDA total (incl. transfers) | 3 232 | 3 231 | 3 260 | ~1.5× |
+| Variant | CDU (ms) | CDW (ms) | CDV (ms) |
+|---------|----------|----------|----------|
+| Fortran (serial) | 45 142 | 61 832 | 61 381 |
+| C++ (serial) | 46 633 | 62 080 | 62 897 |
+| Fortran-OMP | 5 618 | 6 216 | 5 584 |
+| C++-OMP | 5 628 | 6 230 | 5 595 |
+| **CUDA kernel only** | **1 051** | **1 051** | **1 050** |
+| CUDA total (incl. transfers) | 25 085 | 25 065 | 25 094 |
 
-The CUDA kernel achieves a **~38× speedup** over serial Fortran.  However,
-host↔device memory transfers consume ~94% of the total CUDA wall-clock time,
-reducing the observable end-to-end speedup to only ~1.5×.  This motivates the
-memory framework work described below.
+Serial C++ matches Fortran within measurement noise.  OpenMP achieves a
+**~8–11× speedup** depending on the kernel.  The CUDA kernel is **~40–60×
+faster** than serial Fortran, but host↔device data transfers account for ~91%
+of the total CUDA wall-clock time (memory operations including allocation take
+~96%), reducing the observable end-to-end speedup to **~2×**.  The memory
+framework described below is a response to this bottleneck.
 
-![Benchmark results — 256×256×256 grid](benchmarks/graphs/figs/grid_256x256x256_niter100.png)
+![Benchmark results — 512×512×512 grid](benchmarks/graphs/figs/grid_512x512x512_niter100.png)
 
 ---
 
@@ -200,8 +204,7 @@ CDW, CDV), driven by a unified GNU Make build system.  Includes:
   writes structured CSV output.
 - Correctness test runner (`run_tests.py`) with deterministic inputs and
   element-wise comparison against the serial Fortran reference.
-- Publication-quality figure generator (`graphs/plot_benchmarks.py`) using the
-  Wong (2011) colorblind-safe palette.
+- Figure generator (`graphs/plot_benchmarks.py`).
 - `generate_all_sources.py` — regenerates all CUDA/C++ sources from the Fortran
   originals via the compiler.
 
@@ -209,7 +212,7 @@ CDW, CDV), driven by a unified GNU Make build system.  Includes:
 
 ### `memory-framework/` — Lazy GPU Memory Management (PoC)
 
-The benchmark results expose that memory transfers, not computation, are the
+The benchmark results show that memory transfers, not computation, are the
 bottleneck.  This component explores a transparent solution: instead of changing
 how Fortran allocates memory, the framework uses `mprotect(2)` to withdraw the
 process's own access rights to GPU-owned pages.  Any Fortran read or write then
@@ -263,11 +266,3 @@ end module
 
 The entry kernel is specified via `--kernel CDU`; the compiler inlines all
 transitively called `! kernel` subroutines automatically.
-
----
-
-## VS Code
-
-A launch configuration at `.vscode/launch.json` provides a **Run compiler
-package** target that runs `python -m compiler` from the workspace root with
-full debugger support.  Select it in the Run and Debug panel.

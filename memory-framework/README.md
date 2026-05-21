@@ -22,17 +22,17 @@ Fortran source code.
 
 ## 1. Motivation
 
-The benchmark results across the three stencil kernels (CDU, CDW, CDV) show a
-recurring pattern: the actual GPU computation is extremely fast, but the overhead
-of moving data between the CPU and the GPU dwarf it by an order of magnitude.
+Across all three stencil kernels (CDU, CDW, CDV) the GPU computation itself is
+extremely fast, but the data movement between CPU and GPU dwarfs it by an order
+of magnitude.
 
 ![Memory movement cost dominates CUDA execution time](figs/memory-movement-cost.png)
 
-At a 256×256×256 grid with 100 iterations per call, the host↔device data transfers
-alone consume roughly **3 000 ms** out of ~3 200 ms total CUDA time, while the
-kernel itself runs in under **100 ms**.  The GPU computation is ~50× faster than
-serial Fortran on a per-iteration basis, yet the wall-clock time barely improves
-because of the PCIe round-trip on every call.
+At a 512×512×512 grid with 100 iterations per call, host↔device data transfers
+alone consume roughly **22 900 ms** out of ~25 100 ms total CUDA time, while the
+kernel itself takes only **~1 050 ms**.  The GPU kernel is ~40–60× faster than
+serial Fortran per call, yet the end-to-end speedup is only ~2× because data
+must cross the PCIe bus on every kernel invocation.
 
 The root cause is simple: **Fortran owns the arrays**.  Before calling the GPU
 kernel, the runtime must copy every input array from CPU RAM to GPU VRAM; after
@@ -49,11 +49,11 @@ allocates memory differently for the GPU variant.  Neither is truly transparent.
 
 ## 2. The Core Idea
 
-This framework achieves the same effect as CUDA Unified Memory but **works on
-top of ordinary Fortran `allocate` calls**, with no changes to Fortran source.
+The approach works on top of ordinary Fortran `allocate` calls, with no changes
+to Fortran source.
 
-The key insight is that the CPU operating system gives every process fine-grained
-control over which memory pages it is allowed to access.  By temporarily
+The CPU operating system gives every process fine-grained control over which
+memory pages it is allowed to access.  By temporarily
 **withdrawing the process's own access rights** to the pages belonging to a GPU
 buffer, we turn any Fortran read or write into a `SIGSEGV` — a catchable signal.
 A custom signal handler intercepts the fault, performs whatever lazy operation is
@@ -157,9 +157,9 @@ example when the result is immediately passed to another GPU kernel on the next
 call — the buffer remains in `GPU_CURRENT` indefinitely.  No `cudaMemcpy D→H`
 is ever issued, and the PCIe bus is never touched for that buffer.
 
-This is the scenario that motivated the framework: in a time-stepping loop
-that runs many iterations, intermediate results should never have to leave the
-GPU unless some Fortran diagnostic code actually reads them.
+This is the main use case the framework targets: in a time-stepping loop
+running many iterations, intermediate results should never leave the GPU unless
+Fortran code actually reads them.
 
 ---
 
