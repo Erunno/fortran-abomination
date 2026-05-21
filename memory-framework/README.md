@@ -28,7 +28,7 @@ of magnitude.
 
 ![Memory movement cost dominates CUDA execution time](figs/memory-movement-cost.png)
 
-At a 256×256×256 grid with 100 iterations per call, host↔device data transfers
+At a 512×512×512 grid with 100 iterations per call, host↔device data transfers
 alone consume roughly **22 900 ms** out of ~25 100 ms total CUDA time, while the
 kernel itself takes only **~1 050 ms**.  The GPU kernel is ~40–60× faster than
 serial Fortran per call, yet the end-to-end speedup is only ~2× because data

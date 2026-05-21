@@ -9,26 +9,44 @@ per-case and per-variant details are factored into small, reusable include files
 
 ## Table of Contents
 
-1. [Quick Start](#1-quick-start)
-2. [Prerequisites](#2-prerequisites)
-3. [Source Generation](#3-source-generation)
-4. [Running a Single Benchmark](#4-running-a-single-benchmark)
-5. [Automated Benchmark Runner](#5-automated-benchmark-runner)
-6. [Correctness Tests](#6-correctness-tests)
-7. [Generating Figures](#7-generating-figures)
-8. [Directory Structure](#8-directory-structure)
-9. [Architecture](#9-architecture)  
-   9.1 [Build System](#91-build-system)  
-   9.2 [Source Layout per Case](#92-source-layout-per-case)  
-   9.3 [Source Generator](#93-source-generator)  
-   9.4 [Benchmark Driver](#94-benchmark-driver)  
-   9.5 [Benchmark Runner](#95-benchmark-runner)  
-   9.6 [Correctness Test Runner](#96-correctness-test-runner)  
-   9.7 [Graph Generation](#97-graph-generation)
-10. [Adding a New Case](#10-adding-a-new-case)
-11. [Adding a New Variant](#11-adding-a-new-variant)
-12. [CSV Output Format](#12-csv-output-format)
-13. [Troubleshooting](#13-troubleshooting)
+- [Benchmark Suite](#benchmark-suite)
+  - [Table of Contents](#table-of-contents)
+  - [1. Quick Start](#1-quick-start)
+  - [2. Prerequisites](#2-prerequisites)
+  - [3. Source Generation](#3-source-generation)
+    - [What gets generated](#what-gets-generated)
+    - [Running](#running)
+    - [When to re-run](#when-to-re-run)
+  - [4. Running a Single Benchmark](#4-running-a-single-benchmark)
+    - [Required parameter](#required-parameter)
+    - [Optional parameters](#optional-parameters)
+    - [Examples](#examples)
+    - [Reading the output](#reading-the-output)
+  - [5. Automated Benchmark Runner](#5-automated-benchmark-runner)
+    - [Configuration (top of the script)](#configuration-top-of-the-script)
+    - [Running](#running-1)
+    - [Incremental builds](#incremental-builds)
+    - [Running on a cluster / GPU node](#running-on-a-cluster--gpu-node)
+  - [6. Correctness Tests](#6-correctness-tests)
+    - [Running](#running-2)
+    - [How it works](#how-it-works)
+    - [Tolerances](#tolerances)
+    - [Example output](#example-output)
+  - [7. Generating Figures](#7-generating-figures)
+    - [Figure design](#figure-design)
+  - [8. Directory Structure](#8-directory-structure)
+  - [9. Architecture](#9-architecture)
+    - [9.1 Build System](#91-build-system)
+    - [9.2 Source Layout per Case](#92-source-layout-per-case)
+    - [9.3 Source Generator](#93-source-generator)
+    - [9.4 Benchmark Driver](#94-benchmark-driver)
+    - [9.5 Benchmark Runner](#95-benchmark-runner)
+    - [9.6 Correctness Test Runner](#96-correctness-test-runner)
+    - [9.7 Graph Generation](#97-graph-generation)
+  - [10. Adding a New Case](#10-adding-a-new-case)
+  - [11. Adding a New Variant](#11-adding-a-new-variant)
+  - [12. CSV Output Format](#12-csv-output-format)
+  - [13. Troubleshooting](#13-troubleshooting)
 
 ---
 
@@ -36,16 +54,12 @@ per-case and per-variant details are factored into small, reusable include files
 
 ```bash
 # Build and run a single benchmark (plain Fortran, default grid 64×64×64)
-make CASE=CVD VARIANT=Fortran
-./bin/CVD_Fortran_NX64_NY64_NZ64_NITER100_NWARMUP5/benchmark
+make CASE=CDV VARIANT=Fortran
+./bin/CDV_Fortran_NX64_NY64_NZ64_NITER100_NWARMUP5/benchmark
 
 # (Re-)generate all CUDA / C++ / C++-OMP sources from the Fortran originals
 source ../venv/bin/activate
 python generate_all_sources.py
-
-# Build and run a single benchmark (plain Fortran, default grid 64×64×64)
-make CASE=CVD VARIANT=Fortran
-./bin/CVD_Fortran_NX64_NY64_NZ64_NITER100_NWARMUP5/benchmark
 
 # Run all cases/variants/grids automatically → results.csv
 python run_bechmarks.py > results.csv
@@ -154,7 +168,7 @@ the binary, making it safe to have multiple builds coexist.
 
 | Variable | Meaning                            | Example values      |
 | -------- | ---------------------------------- | ------------------- |
-| `CASE`   | Benchmark case (subdirectory name) | `CDU`, `CDW`, `CVD` |
+| `CASE`   | Benchmark case (subdirectory name) | `CDU`, `CDW`, `CDV` |
 
 ### Optional parameters
 
@@ -180,17 +194,17 @@ the binary, making it safe to have multiple builds coexist.
 ### Examples
 
 ```bash
-# Default Fortran build of CVD
-make CASE=CVD
+# Default Fortran build of CDV
+make CASE=CDV
 
-# CVD with CUDA on a specific architecture and a large grid
-make CASE=CVD VARIANT=CUDA NX=256 NY=256 NZ=256 NITER=50 CUDA_ARCH=sm_80
+# CDV with CUDA on a specific architecture and a large grid
+make CASE=CDV VARIANT=CUDA NX=256 NY=256 NZ=256 NITER=50 CUDA_ARCH=sm_80
 
 # CDU with OpenMP and a custom compiler
 make CASE=CDU VARIANT=Fortran-OMP FC=/usr/bin/gfortran-13 NX=128 NY=128 NZ=128
 
 # Rebuild cleanly (remove only this combination's artefacts)
-make clean CASE=CVD VARIANT=Fortran NX=256
+make clean CASE=CDV VARIANT=Fortran NX=256
 
 # Wipe everything in bin/
 make clean-all
@@ -201,7 +215,7 @@ Each variant also has its own three-line `Makefile` inside
 from inside the variant directory:
 
 ```bash
-cd CVD/CUDA && make NX=128 NY=128 NZ=128
+cd CDV/CUDA && make NX=128 NY=128 NZ=128
 ```
 
 ### Reading the output
@@ -209,7 +223,7 @@ cd CVD/CUDA && make NX=128 NY=128 NZ=128
 **Fortran / Fortran-OMP** benchmark output:
 
 ```
---- CVD benchmark ---
+--- CDV benchmark ---
 grid:         256 x 256 x 256
 iters:        100
 warmup_iters: 5
@@ -220,7 +234,7 @@ ms_per_iter:  12.346 ms
 **CUDA** benchmark output (includes per-phase breakdown):
 
 ```
---- CVD benchmark ---
+--- CDV benchmark ---
 grid:         256 x 256 x 256
 iters:        100
 warmup_iters: 5
@@ -242,9 +256,9 @@ Progress/errors go to stderr, so redirecting stdout captures a clean CSV.
 ### Configuration (top of the script)
 
 ```python
-FUNCTIONS     = ['CDW', 'CDU', 'CVD']   # cases to run
-VARIANTS      = ['Fortran', 'Fortran-OMP', 'CUDA']
-GRIDS         = [[64, 64, 64], [128, 128, 128], [256, 256, 256]]
+FUNCTIONS     = ['CDW', 'CDU', 'CDV']   # cases to run
+VARIANTS      = ['Fortran', 'Fortran-OMP', 'CUDA', 'CPP', 'CPP-OMP']
+GRIDS         = [[512, 512, 512]]
 ITERS         = [100]
 WARMUP_ITERS  = 10    # in-kernel warm-up iterations (compiled into the binary)
 WARMUP_ROUNDS = 2     # full-program rounds discarded before timing
@@ -744,7 +758,7 @@ that `CASE/case.mk` exists.
 **`nvcc: command not found`**  
 Set `CUDA_HOME` to point to your CUDA installation:
 ```bash
-make CASE=CVD VARIANT=CUDA CUDA_HOME=/path/to/cuda
+make CASE=CDV VARIANT=CUDA CUDA_HOME=/path/to/cuda
 ```
 
 **OpenMP not available**  
@@ -758,7 +772,7 @@ make CASE=CDU VARIANT=Fortran-OMP EXTRA_FFLAGS=-fopenmp
 Verify that the `CUDA_ARCH` matches the installed GPU:
 ```bash
 nvidia-smi --query-gpu=compute_cap --format=csv,noheader
-make CASE=CVD VARIANT=CUDA CUDA_ARCH=sm_$(compute_cap_without_dot)
+make CASE=CDV VARIANT=CUDA CUDA_ARCH=sm_$(compute_cap_without_dot)
 ```
 
 **Benchmark results show very high variance**  
