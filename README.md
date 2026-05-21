@@ -14,7 +14,7 @@ bottleneck, motivating the memory framework work.
 ## Repository Structure
 
 ```
-fortran-abomination/
+path-to-this-repository/
 │
 ├── compiler/               ← source-to-source compiler (Python package)
 │   └── README.md           ← full compiler documentation
