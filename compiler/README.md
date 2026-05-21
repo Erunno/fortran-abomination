@@ -56,22 +56,22 @@ python -m compiler --input FILE --kernel NAME [options]
 
 ### Required
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--input FILE` | `-i` | Input Fortran source file. |
-| `--kernel NAME` | `-k` | Entry kernel function name (case-sensitive). |
+| Flag            | Short | Description                                  |
+| --------------- | ----- | -------------------------------------------- |
+| `--input FILE`  | `-i`  | Input Fortran source file.                   |
+| `--kernel NAME` | `-k`  | Entry kernel function name (case-sensitive). |
 
 ### Optional
 
-| Flag | Short | Default | Description |
-|------|-------|---------|-------------|
-| `--output-dir DIR` | `-o` | `.` (cwd) | Directory for all generated files. Created if it does not exist. |
-| `--cuda-output FILE` | | `generated_code.cu` | CUDA output filename. |
-| `--cpp-output FILE` | | `generated_cpp_impl.cpp` | Plain C++ output filename. |
-| `--fortran-output FILE` | | `generated_interface.f90` | Fortran interface output filename. |
-| `--common-header FILE` | | `common_functions.cuh` | Common header output filename. |
-| `--no-common-header` | | off | Skip copying the common header. |
-| `--verbose` | `-v` | off | Print detailed parsing and kernel-graph information. |
+| Flag                    | Short | Default                   | Description                                                      |
+| ----------------------- | ----- | ------------------------- | ---------------------------------------------------------------- |
+| `--output-dir DIR`      | `-o`  | `.` (cwd)                 | Directory for all generated files. Created if it does not exist. |
+| `--cuda-output FILE`    |       | `generated_code.cu`       | CUDA output filename.                                            |
+| `--cpp-output FILE`     |       | `generated_cpp_impl.cpp`  | Plain C++ output filename.                                       |
+| `--fortran-output FILE` |       | `generated_interface.f90` | Fortran interface output filename.                               |
+| `--common-header FILE`  |       | `common_functions.cuh`    | Common header output filename.                                   |
+| `--no-common-header`    |       | off                       | Skip copying the common header.                                  |
+| `--verbose`             | `-v`  | off                       | Print detailed parsing and kernel-graph information.             |
 
 ### Error handling
 
@@ -154,17 +154,17 @@ A typical entry kernel composes several passes:
 
 ### 3.4 Supported constructs
 
-| Construct | Notes |
-|-----------|-------|
-| 3-D arrays passed as `(:,:,:)` assumed-shape | Row/column order is preserved via the `F_IDX` indexing macro |
-| `real(knd)` scalars | Mapped to `double` |
-| `integer` scalars | Mapped to `int` |
-| `intent(in)` / `intent(out)` / `intent(inout)` | Drives `const`/`__restrict__` decoration in C++ |
-| Scalar local variables | Lifted to declarations at the top of the C++ function |
-| `do k = lo, hi` loops (up to 3 levels deep) | Mapped to C++ `for` loops; loop bounds may reference size parameters |
-| Arithmetic expressions (all Fortran operators) | Translated element-by-element to C++ |
-| Scalar assignments before loops (pre-computations) | Emitted as C++ assignments outside the loop body |
-| `call SubKernel(...)` within an entry kernel | Inlined: the sub-kernel's body is merged into the generated output |
+| Construct                                          | Notes                                                                |
+| -------------------------------------------------- | -------------------------------------------------------------------- |
+| 3-D arrays passed as `(:,:,:)` assumed-shape       | Row/column order is preserved via the `F_IDX` indexing macro         |
+| `real(knd)` scalars                                | Mapped to `double`                                                   |
+| `integer` scalars                                  | Mapped to `int`                                                      |
+| `intent(in)` / `intent(out)` / `intent(inout)`     | Drives `const`/`__restrict__` decoration in C++                      |
+| Scalar local variables                             | Lifted to declarations at the top of the C++ function                |
+| `do k = lo, hi` loops (up to 3 levels deep)        | Mapped to C++ `for` loops; loop bounds may reference size parameters |
+| Arithmetic expressions (all Fortran operators)     | Translated element-by-element to C++                                 |
+| Scalar assignments before loops (pre-computations) | Emitted as C++ assignments outside the loop body                     |
+| `call SubKernel(...)` within an entry kernel       | Inlined: the sub-kernel's body is merged into the generated output   |
 
 ### 3.5 Restrictions
 

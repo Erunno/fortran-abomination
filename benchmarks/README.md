@@ -59,13 +59,13 @@ python graphs/plot_benchmarks.py
 
 ## 2. Prerequisites
 
-| Tool | Minimum version | Notes |
-|------|----------------|-------|
-| GNU Make | 3.81 | Standard on most Linux systems |
-| gfortran | 10+ | Or any Fortran 2003–compatible compiler; set `FC=` |
-| CUDA Toolkit | 11+ | Only for `VARIANT=CUDA`; set `CUDA_HOME=` if non-standard |
-| Python | 3.9+ | Runner + graph scripts |
-| matplotlib, numpy | any recent | `pip install matplotlib numpy` |
+| Tool              | Minimum version | Notes                                                     |
+| ----------------- | --------------- | --------------------------------------------------------- |
+| GNU Make          | 3.81            | Standard on most Linux systems                            |
+| gfortran          | 10+             | Or any Fortran 2003–compatible compiler; set `FC=`        |
+| CUDA Toolkit      | 11+             | Only for `VARIANT=CUDA`; set `CUDA_HOME=` if non-standard |
+| Python            | 3.9+            | Runner + graph scripts                                    |
+| matplotlib, numpy | any recent      | `pip install matplotlib numpy`                            |
 
 The Fortran compiler must support:
 - Preprocessing (`-cpp` flag or equivalent)
@@ -94,14 +94,14 @@ update the compiler itself.
 
 For each case the following files are written (existing files are overwritten):
 
-| Destination | Content |
-|-------------|---------|
-| `CUDA/generated_code.cu` | CUDA `__global__` kernels + host wrapper |
-| `CUDA/<case>.f90` | Fortran `iso_c_binding` interface module |
+| Destination                      | Content                                    |
+| -------------------------------- | ------------------------------------------ |
+| `CUDA/generated_code.cu`         | CUDA `__global__` kernels + host wrapper   |
+| `CUDA/<case>.f90`                | Fortran `iso_c_binding` interface module   |
 | `CPP-OMP/generated_cpp_impl.cpp` | C++ kernel with `#pragma omp parallel for` |
-| `CPP-OMP/<case>.f90` | Same Fortran interface as CUDA |
-| `CPP/generated_cpp_impl.cpp` | C++ kernel — `#pragma omp` lines stripped |
-| `CPP/<case>.f90` | Same Fortran interface as CUDA |
+| `CPP-OMP/<case>.f90`             | Same Fortran interface as CUDA             |
+| `CPP/generated_cpp_impl.cpp`     | C++ kernel — `#pragma omp` lines stripped  |
+| `CPP/<case>.f90`                 | Same Fortran interface as CUDA             |
 
 The `Fortran/` and `Fortran-OMP/` variants contain hand-written Fortran and
 are never touched by this script.
@@ -152,30 +152,30 @@ the binary, making it safe to have multiple builds coexist.
 
 ### Required parameter
 
-| Variable | Meaning | Example values |
-|----------|---------|----------------|
-| `CASE` | Benchmark case (subdirectory name) | `CDU`, `CDW`, `CVD` |
+| Variable | Meaning                            | Example values      |
+| -------- | ---------------------------------- | ------------------- |
+| `CASE`   | Benchmark case (subdirectory name) | `CDU`, `CDW`, `CVD` |
 
 ### Optional parameters
 
-| Variable | Default | Meaning |
-|----------|---------|---------|
-| `VARIANT` | `Fortran` | `Fortran` \| `Fortran-OMP` \| `CUDA` \| `CPP` \| `CPP-OMP` |
-| `NX` | 64 | Grid interior points in X |
-| `NY` | 64 | Grid interior points in Y |
-| `NZ` | 64 | Grid interior points in Z |
-| `NITER` | 100 | Timed iterations per run |
-| `NWARMUP` | 5 | Warm-up iterations (not timed) |
-| `FC` | `gfortran` | Fortran compiler |
-| `FFLAGS` | `-O3 -march=native -flto` | Base Fortran compiler flags |
-| `EXTRA_FFLAGS` | _(empty)_ | Appended to `FFLAGS` — useful for one-off flags |
-| `CXX` | `g++` | C++ compiler (CPP / CPP-OMP variants) |
-| `CXXFLAGS` | `-O3 -march=native -flto` | Base C++ compiler flags |
-| `EXTRA_CXXFLAGS` | _(empty)_ | Appended to `CXXFLAGS` |
-| `CUDA_HOME` | `/usr/local/cuda` | CUDA installation root |
-| `NVCC` | `$CUDA_HOME/bin/nvcc` | CUDA compiler |
-| `NVCCFLAGS` | `-O3` | NVCC base flags |
-| `CUDA_ARCH` | _(auto)_ | e.g. `sm_80` — passed as `-arch=$(CUDA_ARCH)` if set |
+| Variable         | Default                   | Meaning                                                    |
+| ---------------- | ------------------------- | ---------------------------------------------------------- |
+| `VARIANT`        | `Fortran`                 | `Fortran` \| `Fortran-OMP` \| `CUDA` \| `CPP` \| `CPP-OMP` |
+| `NX`             | 64                        | Grid interior points in X                                  |
+| `NY`             | 64                        | Grid interior points in Y                                  |
+| `NZ`             | 64                        | Grid interior points in Z                                  |
+| `NITER`          | 100                       | Timed iterations per run                                   |
+| `NWARMUP`        | 5                         | Warm-up iterations (not timed)                             |
+| `FC`             | `gfortran`                | Fortran compiler                                           |
+| `FFLAGS`         | `-O3 -march=native -flto` | Base Fortran compiler flags                                |
+| `EXTRA_FFLAGS`   | _(empty)_                 | Appended to `FFLAGS` — useful for one-off flags            |
+| `CXX`            | `g++`                     | C++ compiler (CPP / CPP-OMP variants)                      |
+| `CXXFLAGS`       | `-O3 -march=native -flto` | Base C++ compiler flags                                    |
+| `EXTRA_CXXFLAGS` | _(empty)_                 | Appended to `CXXFLAGS`                                     |
+| `CUDA_HOME`      | `/usr/local/cuda`         | CUDA installation root                                     |
+| `NVCC`           | `$CUDA_HOME/bin/nvcc`     | CUDA compiler                                              |
+| `NVCCFLAGS`      | `-O3`                     | NVCC base flags                                            |
+| `CUDA_ARCH`      | _(auto)_                  | e.g. `sm_80` — passed as `-arch=$(CUDA_ARCH)` if set       |
 
 ### Examples
 
@@ -317,12 +317,12 @@ make test CASE=CDU
 
 ### Tolerances
 
-| Variant | Typical `max_abs_diff` |
-|---------|------------------------|
-| Fortran-OMP | 0 (usually bit-exact) |
-| CPP | 0 (same algorithm and FP order) |
-| CPP-OMP | ≤ 1e-12 (minor FP reordering from parallelism) |
-| CUDA | ≤ 1e-10 (GPU FP order differs) |
+| Variant     | Typical `max_abs_diff`                         |
+| ----------- | ---------------------------------------------- |
+| Fortran-OMP | 0 (usually bit-exact)                          |
+| CPP         | 0 (same algorithm and FP order)                |
+| CPP-OMP     | ≤ 1e-12 (minor FP reordering from parallelism) |
+| CUDA        | ≤ 1e-10 (GPU FP order differs)                 |
 
 Default tolerance is `1e-10` absolute.  Variants that fail to build (e.g. CUDA
 on a node without `nvcc`) are reported as `[SKIP]` rather than `[FAIL]`.
@@ -369,15 +369,15 @@ grid sizes and iteration counts are directly comparable.
 
 Each figure shows grouped bars — one group per kernel, up to five bars per group:
 
-| Bar | Colour | What it shows |
-|-----|--------|---------------|
-| Fortran (serial) | Medium blue, solid | Total wall-clock time |
-| Fortran (OpenMP) | Medium blue, `////` hatch | Total wall-clock time |
-| C++ (serial) | Light sky blue, solid | Total wall-clock time |
-| C++ (OpenMP) | Light sky blue, `\\\\` hatch | Total wall-clock time |
-| CUDA — kernel | Crimson red, stacked bottom | GPU kernel execution only |
-| CUDA — data transfer | Light grey, `xxxx` hatch, stacked | Host↔Device transfer (H2D + D2H) |
-| CUDA — malloc / free | Very light grey, `....` hatch, stacked top | Device allocation overhead |
+| Bar                  | Colour                                     | What it shows                    |
+| -------------------- | ------------------------------------------ | -------------------------------- |
+| Fortran (serial)     | Medium blue, solid                         | Total wall-clock time            |
+| Fortran (OpenMP)     | Medium blue, `////` hatch                  | Total wall-clock time            |
+| C++ (serial)         | Light sky blue, solid                      | Total wall-clock time            |
+| C++ (OpenMP)         | Light sky blue, `\\\\` hatch               | Total wall-clock time            |
+| CUDA — kernel        | Crimson red, stacked bottom                | GPU kernel execution only        |
+| CUDA — data transfer | Light grey, `xxxx` hatch, stacked          | Host↔Device transfer (H2D + D2H) |
+| CUDA — malloc / free | Very light grey, `....` hatch, stacked top | Device allocation overhead       |
 
 Serial and OpenMP variants share the same base colour and are distinguished by
 hatch pattern.  CUDA bars are stacked so the total bar height is the wall-clock
@@ -472,13 +472,13 @@ CASE_CPP_EXTRA  = generated_cpp_impl.cpp  # extra .cpp files (CPP / CPP-OMP)
 
 **`common/variants.mk`** appends variant-specific flags:
 
-| Variant | Extra `FFLAGS` | Extra `CXXFLAGS` | Extra `LDFLAGS` |
-|---------|---------------|-----------------|----------------|
-| `Fortran` | _(none)_ | — | _(none)_ |
-| `Fortran-OMP` | `-fopenmp` | — | `-fopenmp` |
-| `CUDA` | _(none)_ | — | `-L$CUDA_HOME/lib64 -lcudart -lstdc++` |
-| `CPP` | _(none)_ | _(none)_ | `-lstdc++` |
-| `CPP-OMP` | `-fopenmp` | `-fopenmp` | `-lstdc++ -fopenmp` |
+| Variant       | Extra `FFLAGS` | Extra `CXXFLAGS` | Extra `LDFLAGS`                        |
+| ------------- | -------------- | ---------------- | -------------------------------------- |
+| `Fortran`     | _(none)_       | —                | _(none)_                               |
+| `Fortran-OMP` | `-fopenmp`     | —                | `-fopenmp`                             |
+| `CUDA`        | _(none)_       | —                | `-L$CUDA_HOME/lib64 -lcudart -lstdc++` |
+| `CPP`         | _(none)_       | _(none)_         | `-lstdc++`                             |
+| `CPP-OMP`     | `-fopenmp`     | `-fopenmp`       | `-lstdc++ -fopenmp`                    |
 
 **`common/standalone.mk`** is included by every `CASE/VARIANT/Makefile`.  It
 locates the top-level `Makefile` relative to itself and forwards `all` and `clean`
@@ -501,15 +501,15 @@ copying the header.
 
 Each case directory contains:
 
-| File | Purpose |
-|------|--------|
-| `case.mk` | Tells the build system which source files to use |
-| `main.f90` | Benchmark driver (allocates arrays, runs warmup + timed loop) |
+| File            | Purpose                                                             |
+| --------------- | ------------------------------------------------------------------- |
+| `case.mk`       | Tells the build system which source files to use                    |
+| `main.f90`      | Benchmark driver (allocates arrays, runs warmup + timed loop)       |
 | `test_main.f90` | Correctness test driver (deterministic init, one-shot, output dump) |
-| `Fortran/` | Serial Fortran implementation |
-| `Fortran-OMP/` | OpenMP-parallelised Fortran implementation |
-| `CUDA/` | CUDA implementation: a Fortran wrapper + generated `.cu` kernel || `CPP/` | C++ implementation: a Fortran wrapper (`iso_c_binding`) + generated `.cpp` kernel |
-| `CPP-OMP/` | Same as CPP with `#pragma omp parallel for` on all outer loop nests |
+| `Fortran/`      | Serial Fortran implementation                                       |
+| `Fortran-OMP/`  | OpenMP-parallelised Fortran implementation                          |
+| `CUDA/`         | CUDA implementation: a Fortran wrapper + generated `.cu` kernel     |  | `CPP/` | C++ implementation: a Fortran wrapper (`iso_c_binding`) + generated `.cpp` kernel |
+| `CPP-OMP/`      | Same as CPP with `#pragma omp parallel for` on all outer loop nests |
 
 The Fortran source in each variant must export a module named `MomentumAdvection`
 that provides at minimum:
@@ -721,17 +721,17 @@ cuda_malloc_ms;cuda_h2d_ms;cuda_h2d_gbps;cuda_kernel_run;
 cuda_d2h_ms;cuda_d2h_gbps;cuda_free_ms;total_ms
 ```
 
-| Column | Fortran/OMP | CUDA |
-|--------|-------------|------|
-| `function` | case name | case name |
-| `variant` | `Fortran` or `Fortran-OMP` | `CUDA` |
-| `rounds` | number of timed runs | same |
-| `grid_x/y/z` | interior grid dimensions | same |
-| `iters` | timed iterations per run | same |
-| `warmup_iters` | in-kernel warmup count | same |
-| `warmup_turns` | discarded full-program runs | same |
-| `cuda_*` | _(empty)_ | per-phase timing / bandwidth |
-| `total_ms` | wall-clock total | malloc+h2d+kernel+d2h+free |
+| Column         | Fortran/OMP                 | CUDA                         |
+| -------------- | --------------------------- | ---------------------------- |
+| `function`     | case name                   | case name                    |
+| `variant`      | `Fortran` or `Fortran-OMP`  | `CUDA`                       |
+| `rounds`       | number of timed runs        | same                         |
+| `grid_x/y/z`   | interior grid dimensions    | same                         |
+| `iters`        | timed iterations per run    | same                         |
+| `warmup_iters` | in-kernel warmup count      | same                         |
+| `warmup_turns` | discarded full-program runs | same                         |
+| `cuda_*`       | _(empty)_                   | per-phase timing / bandwidth |
+| `total_ms`     | wall-clock total            | malloc+h2d+kernel+d2h+free   |
 
 ---
 

@@ -49,12 +49,12 @@ pip install -r requirements.txt
 
 Hardware requirements for the full benchmark suite:
 
-| Component | Requirement |
-|-----------|-------------|
-| Fortran compiler | gfortran 10+ (or equivalent) |
-| C++ compiler | g++ 10+ with C++17 |
-| GPU + CUDA | CUDA Toolkit 11+ and `nvcc` on `PATH` (CUDA variants only) |
-| OpenMP | supported by the Fortran/C++ compiler (OMP variants) |
+| Component        | Requirement                                                |
+| ---------------- | ---------------------------------------------------------- |
+| Fortran compiler | gfortran 10+ (or equivalent)                               |
+| C++ compiler     | g++ 10+ with C++17                                         |
+| GPU + CUDA       | CUDA Toolkit 11+ and `nvcc` on `PATH` (CUDA variants only) |
+| OpenMP           | supported by the Fortran/C++ compiler (OMP variants)       |
 
 ---
 
@@ -157,14 +157,14 @@ python graphs/plot_benchmarks.py
 Blackwell GPU; GCC 15.2.0 (`gfortran` / `g++`), CUDA 13.1.  Benchmarks were run
 on a 512×512×512 grid, 100 timed iterations per call.
 
-| Variant | CDU (ms) | CDW (ms) | CDV (ms) |
-|---------|----------|----------|----------|
-| Fortran (serial) | 45 142 | 61 832 | 61 381 |
-| C++ (serial) | 46 633 | 62 080 | 62 897 |
-| Fortran-OMP | 5 618 | 6 216 | 5 584 |
-| C++-OMP | 5 628 | 6 230 | 5 595 |
-| **CUDA kernel only** | **1 051** | **1 051** | **1 050** |
-| CUDA total (incl. transfers) | 25 085 | 25 065 | 25 094 |
+| Variant                      | CDU (ms)  | CDW (ms)  | CDV (ms)  |
+| ---------------------------- | --------- | --------- | --------- |
+| Fortran (serial)             | 45 142    | 61 832    | 61 381    |
+| C++ (serial)                 | 46 633    | 62 080    | 62 897    |
+| Fortran-OMP                  | 5 618     | 6 216     | 5 584     |
+| C++-OMP                      | 5 628     | 6 230     | 5 595     |
+| **CUDA kernel only**         | **1 051** | **1 051** | **1 050** |
+| CUDA total (incl. transfers) | 25 085    | 25 065    | 25 094    |
 
 Serial C++ matches Fortran within measurement noise.  OpenMP achieves a
 **~8–11× speedup** depending on the kernel.  The CUDA kernel is **~40–60×
