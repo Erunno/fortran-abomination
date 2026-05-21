@@ -170,7 +170,7 @@ the binary, making it safe to have multiple builds coexist.
 | `FFLAGS` | `-O3 -march=native -flto` | Base Fortran compiler flags |
 | `EXTRA_FFLAGS` | _(empty)_ | Appended to `FFLAGS` — useful for one-off flags |
 | `CXX` | `g++` | C++ compiler (CPP / CPP-OMP variants) |
-| `CXXFLAGS` | `-O3 -march=native` | Base C++ compiler flags |
+| `CXXFLAGS` | `-O3 -march=native -flto` | Base C++ compiler flags |
 | `EXTRA_CXXFLAGS` | _(empty)_ | Appended to `CXXFLAGS` |
 | `CUDA_HOME` | `/usr/local/cuda` | CUDA installation root |
 | `NVCC` | `$CUDA_HOME/bin/nvcc` | CUDA compiler |
@@ -385,12 +385,6 @@ cost of the full CUDA workflow.
 
 Error bars show ±1 standard deviation across `ROUNDS` runs.
 
-### Customising plots
-
-All visual parameters are defined at the top of the script under clearly labelled
-sections (`Palette`, `Layout`, `Publication style`).  The `FUNCTION_ORDER` list
-controls the left-to-right order of the groups.
-
 ---
 
 ## 8. Directory Structure
@@ -528,9 +522,9 @@ module MomentumAdvection
 end module
 ```
 
-`start_hot` / `finish_hot` are no-op hooks in pure Fortran variants; they can be
-used in CUDA variants to trigger JIT compilation or other warm-up work before
-the timed section.
+`start_hot` / `finish_hot` are hooks that are called just before and after the measuremets begin and end. 
+This is used in CUDA variant to tell the code that now is time to start recording CUDA events to 
+measure individual phases of computation (memory transfer, kernel execution and `alloc`/`dealloc`)
 
 ### 9.3 Source Generator
 
@@ -567,8 +561,8 @@ The driver follows this pattern:
 
 1. Allocate all required arrays on the heap
 2. Initialise arrays with representative values
-3. Call `start_hot()` (CUDA: triggers JIT + first allocation)
-4. Run `VAR_NWARMUP` un-timed warm-up iterations
+3. Run `VAR_NWARMUP` un-timed warm-up iterations
+4. Call `start_hot()`
 5. Record `t_start` with `system_clock`
 6. Run `VAR_NITER` timed iterations
 7. Record `t_end`, compute and print timing
@@ -602,29 +596,10 @@ continues to the next combination.
 NWARMUP=0` for near-instant builds and runs.  Build failures are caught
 per-variant and reported as `[SKIP]` without aborting the suite.
 
-Comparison is purely element-wise using Python built-ins (no numpy dependency).
-
 ### 9.7 Graph Generation
 
-`graphs/plot_benchmarks.py` uses **matplotlib** to produce publication-quality
-figures.  One figure per `(grid, iters)` combination is generated.
-
-Key design choices:
-
-- **Normalised y-axis** — values are converted to seconds per Gcell·iter so different
-  grid sizes are directly comparable
-- **Two-tone blue palette** — Fortran (medium blue) and C++ (light sky blue) share
-  a family; serial vs OpenMP variants are distinguished by hatch pattern alone
-- **Crimson accent for CUDA kernel** — draws the eye to the fast part of the CUDA
-  workflow; grey shades for the memory segments keep them visually subordinate
-- **Hatch patterns** (`////`, `\\\\`, `xxxx`, `....`) ensure legibility in greyscale print
-- **CUDA bars are stacked** (kernel + H↔D transfer + malloc/free) to show where time goes
-- **Error bars** (±1σ) on every bar, suppressible via `--omit-error-bars`
-- **External legend** — placed to the right of the plot area so bars are not obscured
-- **LaTeX rendering** — enabled automatically when `latex` or `pdflatex` is on `PATH`
-- **300 dpi PNG + vector PDF** output
-- **`rcParams`-based styling** — all typography and layout is set once at the top
-  of the script, making global style changes trivial
+`graphs/plot_benchmarks.py` uses **matplotlib** to produce figures.
+One figure per `(grid, iters)` combination is generated.
 
 ---
 
@@ -680,7 +655,7 @@ Key design choices:
 
 6. **Write `test_main.f90`** — copy from an existing case, updating the output
    array name and the `call` statement.  The file must print the interior of
-   the result array to stdout (see §6).
+   the result array to stdout.
 
 7. **Register in the source generator** — add an entry to the `CASES` dict in
    `generate_all_sources.py`:
@@ -803,5 +778,4 @@ Verify every arithmetic expression uses `double` (C++) or `real(knd)` (Fortran)
 consistently across all variants.
 
 **`make test` skips all non-Fortran variants**  
-The compilers (`gfortran`, `g++`, `nvcc`) are not on `PATH`.  This is expected
-on login nodes — run the tests on the same node used for benchmarking.
+The compilers (`gfortran`, `g++`, `nvcc`) are not on `PATH`.

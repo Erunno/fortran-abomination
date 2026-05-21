@@ -9,11 +9,11 @@ memory-protection machinery.
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `managed_mem.cpp` | `arm_memory_locks()`: sets `mprotect` permissions and registers the `SIGSEGV` handler |
-| `main.f90` | Fortran program that allocates two arrays, calls `arm_memory_locks`, then performs one of four access patterns |
-| `Makefile` | Cross-language build; `ARGS=N` selects the test case |
+| File              | Purpose                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `managed_mem.cpp` | `arm_memory_locks()`: sets `mprotect` permissions and registers the `SIGSEGV` handler                          |
+| `main.f90`        | Fortran program that allocates two arrays, calls `arm_memory_locks`, then performs one of four access patterns |
+| `Makefile`        | Cross-language build; `ARGS=N` selects the test case                                                           |
 
 ---
 
@@ -28,12 +28,12 @@ make ARGS=3   # run test case 3 (read from output buffer)
 
 ## Test cases
 
-| Case | Fortran action | Trap? | What happens |
-|------|----------------|-------|--------------|
-| `1` | Read `in_arr(1)` | No | `in_arr` is `PROT_READ`; reads go through freely. Returns `15`. |
-| `2` | Write `in_arr(1) = 999` | Yes | Write to `PROT_READ` raises `SIGSEGV`. Handler runs the doubling (simulating H→D re-upload), restores access, then the write succeeds. |
-| `3` | Read `out_arr(1)` | Yes | `out_arr` is `PROT_NONE`. Handler runs the doubling (simulating D→H) and restores access. Returns `30` (= 15 × 2). |
-| `4` | Write `out_arr(1) = 888` | Yes | Same trap as case 3. Handler doubles `out_arr(2)` onward; `out_arr(1)` is then overwritten to `888` by Fortran. |
+| Case | Fortran action           | Trap? | What happens                                                                                                                           |
+| ---- | ------------------------ | ----- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `1`  | Read `in_arr(1)`         | No    | `in_arr` is `PROT_READ`; reads go through freely. Returns `15`.                                                                        |
+| `2`  | Write `in_arr(1) = 999`  | Yes   | Write to `PROT_READ` raises `SIGSEGV`. Handler runs the doubling (simulating H→D re-upload), restores access, then the write succeeds. |
+| `3`  | Read `out_arr(1)`        | Yes   | `out_arr` is `PROT_NONE`. Handler runs the doubling (simulating D→H) and restores access. Returns `30` (= 15 × 2).                     |
+| `4`  | Write `out_arr(1) = 888` | Yes   | Same trap as case 3. Handler doubles `out_arr(2)` onward; `out_arr(1)` is then overwritten to `888` by Fortran.                        |
 
 ---
 

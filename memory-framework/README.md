@@ -28,7 +28,7 @@ of magnitude.
 
 ![Memory movement cost dominates CUDA execution time](figs/memory-movement-cost.png)
 
-At a 512×512×512 grid with 100 iterations per call, host↔device data transfers
+At a 256×256×256 grid with 100 iterations per call, host↔device data transfers
 alone consume roughly **22 900 ms** out of ~25 100 ms total CUDA time, while the
 kernel itself takes only **~1 050 ms**.  The GPU kernel is ~40–60× faster than
 serial Fortran per call, yet the end-to-end speedup is only ~2× because data
@@ -122,45 +122,6 @@ Each tracked buffer is at any moment in exactly one of the following states.
 └───────────────────┘
 ```
 
-### 3.2 Transitions by access pattern
-
-#### Input buffer (data flows Fortran → GPU)
-
-| Event | From state | Action | To state |
-|-------|-----------|--------|---------|
-| `arm()` called | `CPU_ONLY` | `mprotect(PROT_READ)` | `CPU_LOCKED_INPUT` |
-| Fortran **reads** | `CPU_LOCKED_INPUT` | (no trap) | _(unchanged)_ |
-| Fortran **writes** | `CPU_LOCKED_INPUT` | trap → unlock → allow write | `CPU_DIRTY` |
-| GPU kernel launch | `CPU_LOCKED_INPUT` | `cudaMemcpy H→D` | `SYNCHRONIZED` |
-| GPU kernel launch | `CPU_DIRTY` | `cudaMemcpy H→D`, re-lock | `SYNCHRONIZED` |
-| Fortran **writes** | `SYNCHRONIZED` | trap → unlock, mark dirty | `CPU_DIRTY` |
-
-When the input buffer is in `CPU_DIRTY` state at kernel launch time, the framework
-detects this and re-uploads the new data.  The kernel always sees a fresh copy.
-
-#### Output buffer (data flows GPU → Fortran)
-
-| Event | From state | Action | To state |
-|-------|-----------|--------|---------|
-| `arm()` called | `CPU_ONLY` | `mprotect(PROT_NONE)` | `GPU_CURRENT` |
-| GPU kernel finishes | `GPU_CURRENT` | (result stays on GPU) | `GPU_CURRENT` |
-| Fortran **reads** | `GPU_CURRENT` | trap → `cudaMemcpy D→H`, unlock | `SYNCHRONIZED` |
-| Fortran **writes** | `GPU_CURRENT` | trap → unlock, discard GPU copy | `CPU_DIRTY` |
-| Fortran **reads** | `SYNCHRONIZED` | (no trap) | _(unchanged)_ |
-| Fortran **writes** | `SYNCHRONIZED` | trap → unlock | `CPU_DIRTY` |
-| Next kernel launch | `CPU_DIRTY` | treat as input: `cudaMemcpy H→D` | `GPU_CURRENT` |
-
-#### The output-only case (zero-cost ideal)
-
-If Fortran uses a buffer *only* as a GPU output and never reads it back — for
-example when the result is immediately passed to another GPU kernel on the next
-call — the buffer remains in `GPU_CURRENT` indefinitely.  No `cudaMemcpy D→H`
-is ever issued, and the PCIe bus is never touched for that buffer.
-
-This is the main use case the framework targets: in a time-stepping loop
-running many iterations, intermediate results should never leave the GPU unless
-Fortran code actually reads them.
-
 ---
 
 ## 4. Implementation Mechanism
@@ -175,11 +136,11 @@ mprotect(void* addr, size_t len, int prot);
 
 Sets access permissions on a range of memory pages.  Permissions are:
 
-| `prot` value | Effect |
-|-------------|--------|
-| `PROT_READ \| PROT_WRITE` | Normal read/write access |
-| `PROT_READ` | Reads allowed; any write raises `SIGSEGV` |
-| `PROT_NONE` | All access forbidden; any read or write raises `SIGSEGV` |
+| `prot` value              | Effect                                                   |
+| ------------------------- | -------------------------------------------------------- |
+| `PROT_READ \| PROT_WRITE` | Normal read/write access                                 |
+| `PROT_READ`               | Reads allowed; any write raises `SIGSEGV`                |
+| `PROT_NONE`               | All access forbidden; any read or write raises `SIGSEGV` |
 
 The granularity is one OS page (typically 4 096 bytes).  The framework rounds
 buffer boundaries outward to page boundaries before calling `mprotect`, so the
@@ -219,11 +180,11 @@ machinery.
 
 ### Files
 
-| File | Purpose |
-|------|---------|
-| `managed_mem.cpp` | `arm_memory_locks()` implementation: sets up page protections and registers the `SIGSEGV` handler |
-| `main.f90` | Fortran program that allocates two arrays, calls `arm_memory_locks`, then performs one of four access patterns |
-| `Makefile` | Builds the mixed Fortran/C++ binary; pass `ARGS=N` to choose the test case |
+| File              | Purpose                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `managed_mem.cpp` | `arm_memory_locks()` implementation: sets up page protections and registers the `SIGSEGV` handler              |
+| `main.f90`        | Fortran program that allocates two arrays, calls `arm_memory_locks`, then performs one of four access patterns |
+| `Makefile`        | Builds the mixed Fortran/C++ binary; pass `ARGS=N` to choose the test case                                     |
 
 ### How to build and run
 
@@ -238,12 +199,12 @@ make ARGS=1   # run test case 1
 The Fortran program accepts a single command-line argument (1–4) that selects
 which access to perform after arming the locks.  This isolates each trap scenario:
 
-| Case | Fortran action | What happens |
-|------|---------------|-------------|
-| `1` | Read `in_arr(1)` | **No trap.** `in_arr` is `PROT_READ`; reads are allowed freely. Returns `15`. |
-| `2` | Write `in_arr(1) = 999` | **Trap fires.** Write to `PROT_READ` page raises `SIGSEGV`. Handler unlocks both pages and computes the doubling (simulating an H→D re-upload trigger). After the handler, the write succeeds. `out_arr` now holds the doubled original values. |
-| `3` | Read `out_arr(1)` | **Trap fires.** `out_arr` is `PROT_NONE`; any access raises `SIGSEGV`. Handler unlocks and runs the doubling (simulating D→H). Returns `30` (= 15 × 2). |
-| `4` | Write `out_arr(1) = 888` | **Trap fires.** Same trap as case 3. Handler unlocks and runs doubling for `out_arr(2)` onwards; `out_arr(1)` is then overwritten to `888` by Fortran. |
+| Case | Fortran action           | What happens                                                                                                                                                                                                                                    |
+| ---- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1`  | Read `in_arr(1)`         | **No trap.** `in_arr` is `PROT_READ`; reads are allowed freely. Returns `15`.                                                                                                                                                                   |
+| `2`  | Write `in_arr(1) = 999`  | **Trap fires.** Write to `PROT_READ` page raises `SIGSEGV`. Handler unlocks both pages and computes the doubling (simulating an H→D re-upload trigger). After the handler, the write succeeds. `out_arr` now holds the doubled original values. |
+| `3`  | Read `out_arr(1)`        | **Trap fires.** `out_arr` is `PROT_NONE`; any access raises `SIGSEGV`. Handler unlocks and runs the doubling (simulating D→H). Returns `30` (= 15 × 2).                                                                                         |
+| `4`  | Write `out_arr(1) = 888` | **Trap fires.** Same trap as case 3. Handler unlocks and runs doubling for `out_arr(2)` onwards; `out_arr(1)` is then overwritten to `888` by Fortran.                                                                                          |
 
 ### Expected output for case 3
 
