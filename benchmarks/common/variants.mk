@@ -4,7 +4,17 @@
 # Defines: VARIANT_FFLAGS, VARIANT_LDFLAGS
 # ============================================================
 
-ifeq ($(VARIANT),Fortran-OMP)
+ifeq ($(VARIANT),Fortran-ACC)
+  FC               = $(FC_ACC)
+  # Override FFLAGS: nvfortran doesn't support -march=native or -flto;
+  # gfortran -fopenacc + -flto also has LTO/module symbol issues.
+  FFLAGS           = -O3
+  FC_MODULE_FLAG   = -module
+  VARIANT_FFLAGS   = $(ACC_FLAGS)$(if $(ACC_GPU_CC), -gpu=cc$(ACC_GPU_CC),)
+  VARIANT_LDFLAGS  = $(ACC_FLAGS)$(if $(ACC_GPU_CC), -gpu=cc$(ACC_GPU_CC),)
+  VARIANT_CXXFLAGS =
+
+else ifeq ($(VARIANT),Fortran-OMP)
   VARIANT_FFLAGS   = -fopenmp
   VARIANT_LDFLAGS  = -fopenmp
   VARIANT_CXXFLAGS =

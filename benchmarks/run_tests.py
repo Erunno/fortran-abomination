@@ -16,7 +16,7 @@ import subprocess
 BENCHMARKS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 CASES     = ['CDU', 'CDW', 'CDV']
-VARIANTS  = ['Fortran', 'Fortran-OMP', 'CPP', 'CPP-OMP', 'CUDA']
+VARIANTS  = ['Fortran', 'Fortran-OMP', 'Fortran-ACC', 'CPP', 'CPP-OMP', 'CUDA']
 REFERENCE = 'Fortran'
 
 # Small grid: fast to build and run, small enough to compare element-by-element

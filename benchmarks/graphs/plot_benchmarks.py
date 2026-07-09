@@ -84,7 +84,7 @@ _YLABEL = (r'Execution time (s / Gcell$\cdot$iter)'
            'Execution time (s / Gcell\u00b7iter)')
 
 # ── Layout ──────────────────────────────────────────────────────────────────────
-VARIANT_ORDER  = ['Fortran', 'CPP', 'Fortran-OMP', 'CPP-OMP', 'CUDA']
+VARIANT_ORDER  = ['Fortran', 'CPP', 'Fortran-OMP', 'CPP-OMP', 'Fortran-ACC', 'CUDA']
 FUNCTION_ORDER = ['CDW', 'CDU', 'CDV', 'CVD']
 
 # DESIGN FIX: Slimmer bars, wider gap between groups
@@ -97,6 +97,7 @@ C_FORTRAN     = '#3571B5'   # Medium Blue
 C_CPP         = '#70AED8'   # Light Sky Blue
 C_FORTRAN_OMP = '#3571B5'   # Medium Blue (distinguished by hatch)
 C_CPP_OMP     = '#70AED8'   # Light Sky Blue (distinguished by hatch)
+C_FORTRAN_ACC = '#4A90E2'   # Slightly different blue 
 
 # CUDA kernel gets a punchy accent color to draw the eye to the "blazing fast" part
 C_KERNEL      = '#D7263D'   # Sharp Crimson Red
@@ -109,10 +110,11 @@ C_MEM_ALLOC   = '#EAEAEA'   # Very Light Blue-Grey
 H_FORTRAN     = ''
 H_CPP         = ''
 H_FORTRAN_OMP = '////'      # Denser hatch for visibility
-H_CPP_OMP     = '\\\\\\\\'  # Opposite direction for C++
-H_KERNEL      = ''
+H_CPP_OMP     = '\\\\\\\\'  # Opposite direction for C++H_FORTRAN_ACC = '||||'      # Vertical lines — GPU-accelerated FortranH_KERNEL      = ''
 H_MEM         = 'xxxx'
 H_ALLOC       = '....'
+H_FORTRAN_ACC = 'oooo'      # GPU-accelerated Fortran
+H_KERNEL      = ''
 
 ECOLOR = '#404040'          # Slightly softer error bar color
 
@@ -140,6 +142,7 @@ LEGEND_PATCHES = [
     mpatches.Patch(facecolor=C_CPP,         hatch=H_CPP,         edgecolor='#1e1e1e', label='C++ (serial)'),
     mpatches.Patch(facecolor=C_FORTRAN_OMP, hatch=H_FORTRAN_OMP, edgecolor='#1e1e1e', label='Fortran (OpenMP)'),
     mpatches.Patch(facecolor=C_CPP_OMP,     hatch=H_CPP_OMP,     edgecolor='#1e1e1e', label='C++ (OpenMP)'),
+    mpatches.Patch(facecolor=C_FORTRAN,     hatch=H_FORTRAN_ACC, edgecolor='#1e1e1e', label='Fortran (OpenACC)'),
     mpatches.Patch(facecolor=C_KERNEL,      hatch=H_KERNEL,      edgecolor='#1e1e1e', label=_t('CUDA \u2014 kernel')),
     _MemPatch(facecolor=C_MEM_MOV,     hatch=H_MEM,         edgecolor='#1e1e1e', label=_t('CUDA \u2014 data transfer')),
     _MemPatch(facecolor=C_MEM_ALLOC,   hatch=H_ALLOC,       edgecolor='#1e1e1e', label=_t('CUDA \u2014 malloc / free')),
@@ -247,6 +250,7 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str,
                 palette = {
                     'Fortran':     (C_FORTRAN,     H_FORTRAN),
                     'Fortran-OMP': (C_FORTRAN_OMP, H_FORTRAN_OMP),
+                    'Fortran-ACC': (C_FORTRAN,     H_FORTRAN_ACC),
                     'CPP':         (C_CPP,         H_CPP),
                     'CPP-OMP':     (C_CPP_OMP,     H_CPP_OMP),
                 }
@@ -279,6 +283,7 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str,
     present_variants = {r['variant'] for r in rows}
 
     def _variant_in_label(label):
+        if 'OpenACC' in label:                           return 'Fortran-ACC' in present_variants
         if 'Fortran' in label and 'OpenMP' not in label: return 'Fortran' in present_variants
         if 'Fortran (OpenMP)' in label:                  return 'Fortran-OMP' in present_variants
         if 'C++ (serial)' in label:                      return 'CPP' in present_variants

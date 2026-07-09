@@ -14,7 +14,7 @@
 #   CASE    — subdirectory with the benchmark (CDU | CDW | CVD | …)
 #
 # Optional (all have defaults in common/defaults.mk):
-#   VARIANT       — Fortran (default) | Fortran-OMP | CUDA | CPP | CPP-OMP
+#   VARIANT       — Fortran (default) | Fortran-OMP | Fortran-ACC | CUDA | CPP | CPP-OMP
 #   NX NY NZ      — interior grid dimensions
 #   NITER         — timed iterations
 #   NWARMUP       — warm-up iterations
@@ -75,7 +75,7 @@ $(BINDIR):
 
 # Compile the variant's Fortran source (cvd.f90, cdu.f90, …)
 $(CASE_OBJ): $(CASE)/$(VARIANT)/$(CASE_SRC) | $(BINDIR)
-	$(FC) $(ALL_FFLAGS) $(DEFINES) -J $(BINDIR) -I$(BINDIR) -c $< -o $@
+	$(FC) $(ALL_FFLAGS) $(DEFINES) $(FC_MODULE_FLAG) $(BINDIR) -I$(BINDIR) -c $< -o $@
 
 # Compile any extra CUDA sources (.cu files listed in CASE_CUDA_EXTRA)
 # -I$(CURDIR)/common makes the shared common_functions.cuh visible to all cases

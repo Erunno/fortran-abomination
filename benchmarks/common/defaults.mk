@@ -38,3 +38,14 @@ CUDA_HOME  ?= /usr/local/cuda
 NVCC       ?= $(CUDA_HOME)/bin/nvcc
 NVCCFLAGS  ?= -O3
 CUDA_ARCH  ?=
+
+# ---- OpenACC Fortran compiler & flags ----------------------
+# nvfortran (NVIDIA HPC SDK) is required for GPU offloading.
+# Set FC_ACC=gfortran and ACC_FLAGS=-fopenacc for a CPU-only build.
+FC_ACC         ?= nvfortran
+ACC_FLAGS      ?= -acc=gpu
+# Optionally specify compute capability, e.g. ACC_GPU_CC=89 for Ada Lovelace,
+# ACC_GPU_CC=100 for Blackwell.  Leave empty to let nvfortran auto-detect.
+ACC_GPU_CC     ?=
+# Module output directory flag: gfortran uses -J, nvfortran uses -module
+FC_MODULE_FLAG ?= -J
