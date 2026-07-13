@@ -2,16 +2,16 @@
 # Benchmarks — unified top-level Makefile
 #
 # Usage:
-#   make CASE=CVD VARIANT=Fortran
-#   make CASE=CVD VARIANT=CUDA NX=128 NY=128 NZ=128 NITER=200 NWARMUP=10
+#   make CASE=CDV VARIANT=Fortran
+#   make CASE=CDV VARIANT=CUDA NX=128 NY=128 NZ=128 NITER=200 NWARMUP=10
 #   make CASE=CDU VARIANT=Fortran-OMP NX=256
 #   make CASE=CDU VARIANT=CPP
 #   make CASE=CDU VARIANT=CPP-OMP NX=256
-#   make clean CASE=CVD VARIANT=Fortran
+#   make clean CASE=CDV VARIANT=Fortran
 #   make clean-all                          # wipe the entire bin/ tree
 #
 # Required:
-#   CASE    — subdirectory with the benchmark (CDU | CDW | CVD | …)
+#   CASE    — subdirectory with the benchmark (CDU | CDW | CDV | …)
 #
 # Optional (all have defaults in common/defaults.mk):
 #   VARIANT       — Fortran (default) | Fortran-OMP | Fortran-ACC | CUDA | CPP | CPP-OMP
@@ -25,13 +25,13 @@
 #   CUDA_HOME NVCC NVCCFLAGS CUDA_ARCH
 # ============================================================
 
-CASE    ?= CVD
+CASE    ?= CDV
 VARIANT ?= Fortran
 
 include common/defaults.mk
 
 # Each CASE/ directory contains a tiny case.mk that sets:
-#   CASE_SRC        — the Fortran source filename  (e.g. cvd.f90)
+#   CASE_SRC        — the Fortran source filename  (e.g. CDV.f90)
 #   CASE_CUDA_EXTRA — extra .cu files for CUDA variant (optional)
 #   CASE_CPP_EXTRA  — extra .cpp files for CPP / CPP-OMP variant (optional)
 include $(CASE)/case.mk
@@ -73,7 +73,7 @@ all: $(BENCH)
 $(BINDIR):
 	mkdir -p $@
 
-# Compile the variant's Fortran source (cvd.f90, cdu.f90, …)
+# Compile the variant's Fortran source (CDV.f90, cdu.f90, …)
 $(CASE_OBJ): $(CASE)/$(VARIANT)/$(CASE_SRC) | $(BINDIR)
 	$(FC) $(ALL_FFLAGS) $(DEFINES) $(FC_MODULE_FLAG) $(BINDIR) -I$(BINDIR) -c $< -o $@
 
@@ -101,7 +101,7 @@ test:
 
 # Remove build artefacts for the current CASE/VARIANT/params combination
 clean:
-	rm -rf $(BINDIR)
+	rm -rf $(BINDIR_ROOT)
 
 # Wipe the entire bin/ tree (all cases, all variants)
 clean-all:

@@ -236,6 +236,7 @@ void kernel_group_6_device(
     
 }
 
+bool pinned = false;
 
 // The wrapper function called by Fortran
 extern "C" {
@@ -259,6 +260,16 @@ extern "C" {
         double dymin,
         double dzmin
     ) {
+
+        if (!pinned) {
+            cudaHostRegister(u, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaHostRegisterPortable);
+            cudaHostRegister(u2, (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3), cudaHostRegisterPortable);
+            cudaHostRegister(v, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaHostRegisterPortable);
+            cudaHostRegister(w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaHostRegisterPortable);
+            
+            pinned = true;
+        }
+
         // 1. Allocate memory on the GPU (Device)
         double* w_device;
         double* u2_device;
