@@ -16,7 +16,7 @@ import subprocess
 BENCHMARKS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 CASES     = ['CDU', 'CDW', 'CDV']
-VARIANTS  = ['Fortran', 'Fortran-OMP', 'Fortran-ACC', 'CPP', 'CPP-OMP', 'CUDA']
+VARIANTS  = ['Fortran', 'Fortran-OMP', 'Fortran-ACC', 'CPP', 'CPP-OMP', 'CUDA', 'CUDA-pinned']
 REFERENCE = 'Fortran'
 
 # Small grid: fast to build and run, small enough to compare element-by-element
@@ -42,12 +42,20 @@ def _binary_path(case: str, variant: str) -> str:
 
 def _build(case: str, variant: str) -> str:
     """Build the test binary (using test_main.f90) and return its path."""
+    command = [
+        'make',
+        f'CASE={case}', f'VARIANT={variant}',
+        f'NX={TEST_NX}', f'NY={TEST_NY}', f'NZ={TEST_NZ}',
+        f'NITER={TEST_NITER}', f'NWARMUP={TEST_NWARMUP}',
+        'MAIN_SRC=test_main.f90'
+    ]
+
+    # Inject the macro flag if building the pinned variant
+    if variant == 'CUDA-pinned':
+        command.append('USE_PINNED_MEMORY=1')
+
     result = subprocess.run(
-        ['make',
-         f'CASE={case}', f'VARIANT={variant}',
-         f'NX={TEST_NX}', f'NY={TEST_NY}', f'NZ={TEST_NZ}',
-         f'NITER={TEST_NITER}', f'NWARMUP={TEST_NWARMUP}',
-         'MAIN_SRC=test_main.f90'],
+        command,
         cwd=BENCHMARKS_DIR,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,

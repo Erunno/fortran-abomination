@@ -24,7 +24,7 @@ path-to-this-repository/
 │   ├── elmm_cdw.f90        ← vertical momentum advection (W)
 │   └── elmm_cdv.f90        ← meridional momentum advection (V)
 │
-├── benchmarks/             ← full benchmark suite (5 variants × 3 kernels)
+├── benchmarks/             ← full benchmark suite (7 variants × 3 kernels)
 │   └── README.md           ← build, run, test, and plotting documentation
 │
 ├── memory-framework/       ← proof-of-concept: transparent lazy GPU memory
@@ -53,8 +53,9 @@ Hardware requirements for the full benchmark suite:
 | ---------------- | ---------------------------------------------------------- |
 | Fortran compiler | gfortran 10+ (or equivalent)                               |
 | C++ compiler     | g++ 10+ with C++17                                         |
-| GPU + CUDA       | CUDA Toolkit 11+ and `nvcc` on `PATH` (CUDA variants only) |
-| OpenMP           | supported by the Fortran/C++ compiler (OMP variants)       |
+| GPU + CUDA       | CUDA Toolkit 11+ and `nvcc` on `PATH` (`CUDA` / `CUDA-pinned`) |
+| OpenMP           | supported by the Fortran/C++ compiler (`Fortran-OMP` / `CPP-OMP`) |
+| OpenACC          | NVIDIA HPC SDK `nvfortran` by default for `Fortran-ACC` |
 
 ---
 
@@ -88,7 +89,10 @@ file format, and architecture description.
 ### 2 — Regenerate all benchmark sources
 
 The `CPP`, `CPP-OMP`, and `CUDA` benchmark variants use files produced by the
-compiler.  To regenerate them all from the Fortran originals:
+compiler. `CUDA-pinned` reuses the same generated CUDA sources and only changes
+the build by enabling pinned host memory support; it does not have a separate
+source directory. `Fortran-ACC` is maintained as a handwritten OpenACC variant.
+To regenerate the generated sources from the Fortran originals:
 
 ```bash
 python benchmarks/generate_all_sources.py
@@ -108,9 +112,16 @@ python benchmarks/generate_all_sources.py
 make -C benchmarks CASE=CDU VARIANT=Fortran
 ./benchmarks/bin/CDU_Fortran_NX64_NY64_NZ64_NITER100_NWARMUP5/benchmark
 
+# OpenACC Fortran, default grid
+make -C benchmarks CASE=CDU VARIANT=Fortran-ACC
+
 # CUDA, 256×256×256 grid
 make -C benchmarks CASE=CDU VARIANT=CUDA NX=256 NY=256 NZ=256 CUDA_ARCH=sm_80
 ./benchmarks/bin/CDU_CUDA_NX256_NY256_NZ256_NITER100_NWARMUP5/benchmark
+
+# CUDA with pinned host memory, using the same CUDA sources
+make -C benchmarks CASE=CDU VARIANT=CUDA-pinned USE_PINNED_MEMORY=1 NX=256 NY=256 NZ=256 CUDA_ARCH=sm_80
+./benchmarks/bin/CDU_CUDA-pinned_NX256_NY256_NZ256_NITER100_NWARMUP5/benchmark
 ```
 
 ### 4 — Run the full benchmark sweep → CSV
@@ -134,12 +145,17 @@ Expected output:
 === CDU ===
   [REF ] Fortran         4096 values
   [PASS] Fortran-OMP     max_abs_diff=0.000e+00  (tol=1e-10)
+  [PASS] Fortran-ACC     max_abs_diff=0.000e+00  (tol=1e-10)
   [PASS] CPP             max_abs_diff=0.000e+00  (tol=1e-10)
   [PASS] CPP-OMP         max_abs_diff=0.000e+00  (tol=1e-10)
   [PASS] CUDA            max_abs_diff=0.000e+00  (tol=1e-10)
+  [PASS] CUDA-pinned     max_abs_diff=0.000e+00  (tol=1e-10)
 
 All tests PASSED.
 ```
+
+The current correctness script checks `Fortran`, `Fortran-OMP`, `Fortran-ACC`,
+`CPP`, `CPP-OMP`, `CUDA`, and `CUDA-pinned`.
 
 ### 6 — Generate figures
 
@@ -197,8 +213,10 @@ kernel call graph, groups do-loop nests for fusion, and emits:
 
 ### `benchmarks/` — Benchmark Suite
 
-Five implementation variants of three momentum-advection stencil kernels (CDU,
-CDW, CDV), driven by a unified GNU Make build system.  Includes:
+Seven implementation variants of three momentum-advection stencil kernels
+(`Fortran`, `Fortran-OMP`, `Fortran-ACC`, `CUDA`, `CUDA-pinned`, `CPP`,
+`CPP-OMP`) across CDU, CDW, and CDV, driven by a unified GNU Make build system.
+Includes:
 
 - Automated runner (`run_bechmarks.py`) that sweeps grids, builds on demand, and
   writes structured CSV output.
