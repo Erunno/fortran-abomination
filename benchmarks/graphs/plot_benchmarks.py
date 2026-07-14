@@ -84,7 +84,7 @@ _YLABEL = (r'Execution time (s / Gcell$\cdot$iter)'
            'Execution time (s / Gcell\u00b7iter)')
 
 # ── Layout ──────────────────────────────────────────────────────────────────────
-VARIANT_ORDER  = ['Fortran', 'CPP', 'Fortran-OMP', 'CPP-OMP', 'Fortran-ACC', 'CUDA']
+VARIANT_ORDER  = ['Fortran', 'CPP', 'Fortran-OMP', 'CPP-OMP', 'Fortran-ACC', 'CUDA', 'CUDA-pinned']
 FUNCTION_ORDER = ['CDW', 'CDU', 'CDV', 'CVD']
 
 # DESIGN FIX: Slimmer bars, wider gap between groups
@@ -110,11 +110,12 @@ C_MEM_ALLOC   = '#EAEAEA'   # Very Light Blue-Grey
 H_FORTRAN     = ''
 H_CPP         = ''
 H_FORTRAN_OMP = '////'      # Denser hatch for visibility
-H_CPP_OMP     = '\\\\\\\\'  # Opposite direction for C++H_FORTRAN_ACC = '||||'      # Vertical lines — GPU-accelerated FortranH_KERNEL      = ''
-H_MEM         = 'xxxx'
-H_ALLOC       = '....'
+H_CPP_OMP     = '\\\\\\\\'  # Opposite direction for C++
 H_FORTRAN_ACC = 'oooo'      # GPU-accelerated Fortran
 H_KERNEL      = ''
+H_MEM         = 'xxxx'      # Pageable memory
+H_MEM_PINNED  = '////'      # Pinned memory (distinct hatch)
+H_ALLOC       = '....'
 
 ECOLOR = '#404040'          # Slightly softer error bar color
 
@@ -144,8 +145,9 @@ LEGEND_PATCHES = [
     mpatches.Patch(facecolor=C_CPP_OMP,     hatch=H_CPP_OMP,     edgecolor='#1e1e1e', label='C++ (OpenMP)'),
     mpatches.Patch(facecolor=C_FORTRAN,     hatch=H_FORTRAN_ACC, edgecolor='#1e1e1e', label='Fortran (OpenACC)'),
     mpatches.Patch(facecolor=C_KERNEL,      hatch=H_KERNEL,      edgecolor='#1e1e1e', label=_t('CUDA \u2014 kernel')),
-    _MemPatch(facecolor=C_MEM_MOV,     hatch=H_MEM,         edgecolor='#1e1e1e', label=_t('CUDA \u2014 data transfer')),
-    _MemPatch(facecolor=C_MEM_ALLOC,   hatch=H_ALLOC,       edgecolor='#1e1e1e', label=_t('CUDA \u2014 malloc / free')),
+    _MemPatch(facecolor=C_MEM_MOV,          hatch=H_MEM,         edgecolor='#1e1e1e', label=_t('CUDA \u2014 pageable transfer')),
+    _MemPatch(facecolor=C_MEM_MOV,          hatch=H_MEM_PINNED,  edgecolor='#1e1e1e', label=_t('CUDA \u2014 pinned transfer')),
+    _MemPatch(facecolor=C_MEM_ALLOC,        hatch=H_ALLOC,       edgecolor='#1e1e1e', label=_t('CUDA \u2014 malloc / free')),
 ]
 
 
@@ -226,18 +228,24 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str,
             ebar_kw = dict(elinewidth=0.8, ecolor=ECOLOR, capsize=2.5,
                            capthick=0.8, zorder=6)
 
-            if variant == 'CUDA':
+            if variant in ('CUDA', 'CUDA-pinned'):
                 kernel_ms = (row['cuda_kernel_run'] or 0.0) / norm
                 mem_ms    = ((row['cuda_h2d_ms'] or 0.0) + (row['cuda_d2h_ms'] or 0.0)) / norm
                 alloc_ms  = ((row['cuda_malloc_ms'] or 0.0) + (row['cuda_free_ms'] or 0.0)) / norm
                 total_std = (row['total_ms_std'] or 0.0) / norm
 
+                # Use the unique memory hatch based on the variant
+                current_h_mem = H_MEM_PINNED if variant == 'CUDA-pinned' else H_MEM
+
                 ax.bar(x, kernel_ms, BAR_WIDTH,
                        color=C_KERNEL, hatch=H_KERNEL, edgecolor='#1e1e1e', linewidth=0.8, zorder=3)
+                
+                # Dynamic memory hatch applied here
                 ax.bar(x, mem_ms, BAR_WIDTH, bottom=kernel_ms,
-                       color=C_MEM_MOV, hatch=H_MEM, edgecolor='white', linewidth=0.8, zorder=3)
+                       color=C_MEM_MOV, hatch=current_h_mem, edgecolor='white', linewidth=0.8, zorder=3)
                 ax.bar(x, mem_ms, BAR_WIDTH, bottom=kernel_ms,
                        fill=False, hatch='', edgecolor='#1e1e1e', linewidth=0.8, zorder=4)
+                
                 ax.bar(x, alloc_ms, BAR_WIDTH, bottom=kernel_ms + mem_ms,
                        color=C_MEM_ALLOC, hatch=H_ALLOC, edgecolor='white', linewidth=0.8, zorder=3,
                        **({} if omit_error_bars else {'yerr': total_std, 'error_kw': ebar_kw}))
@@ -288,7 +296,11 @@ def plot_scenario(key: tuple, rows: list[dict], out_stem: str,
         if 'Fortran (OpenMP)' in label:                  return 'Fortran-OMP' in present_variants
         if 'C++ (serial)' in label:                      return 'CPP' in present_variants
         if 'C++ (OpenMP)' in label:                      return 'CPP-OMP' in present_variants
-        return 'CUDA' in present_variants
+        if 'pinned transfer' in label:                   return 'CUDA-pinned' in present_variants
+        if 'pageable transfer' in label:                 return 'CUDA' in present_variants
+        # Kernel and Malloc/Free labels should show up if ANY CUDA variant is present
+        if 'CUDA' in label:                              return 'CUDA' in present_variants or 'CUDA-pinned' in present_variants
+        return False
 
     visible_patches = [p for p in LEGEND_PATCHES if _variant_in_label(p.get_label())]
     

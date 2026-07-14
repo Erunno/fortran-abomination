@@ -6,12 +6,9 @@ import sys
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 FUNCTIONS    = ['CDW', 'CDU', 'CDV']
-# VARIANTS      = ['CUDA', 'CUDA-pinned', 'Fortran-ACC']
-# GRIDS        = [[512, 512, 512]]
-# ITERS        = [100]
 VARIANTS      = ['Fortran', 'Fortran-OMP', 'Fortran-ACC', 'CUDA', 'CUDA-pinned','CPP', 'CPP-OMP']
-GRIDS        = [[64, 64, 64]]
-ITERS        = [20]
+GRIDS        = [[512, 512, 512]]
+ITERS        = [100]
 WARMUP_ITERS = 10   # in-kernel warm-up iterations passed to the binary
 WARMUP_ROUNDS = 2   # full-program rounds whose timing is discarded
 ROUNDS        = 5   # full-program rounds whose timing is collected
