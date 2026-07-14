@@ -175,19 +175,24 @@ on a 512×512×512 grid, 100 timed iterations per call.
 
 | Variant                      | CDU (ms)  | CDW (ms)  | CDV (ms)  |
 | ---------------------------- | --------- | --------- | --------- |
-| Fortran (serial)             | 45 142    | 61 832    | 61 381    |
-| C++ (serial)                 | 46 633    | 62 080    | 62 897    |
-| Fortran-OMP                  | 5 618     | 6 216     | 5 584     |
-| C++-OMP                      | 5 628     | 6 230     | 5 595     |
-| **CUDA kernel only**         | **1 051** | **1 051** | **1 050** |
-| CUDA total (incl. transfers) | 25 085    | 25 065    | 25 094    |
+| Fortran (serial)             | 45 144    | 61 873    | 61 347    |
+| C++ (serial)                 | 46 782    | 62 079    | 62 789    |
+| Fortran-OMP                  | 5 625     | 6 234     | 5 561     |
+| C++-OMP                      | 5 635     | 6 231     | 5 591     |
+| Fortran-ACC                  | 18 310    | 18 320    | 18 314    |
+| **CUDA kernel only**         | **1 051** | **1 050** | **1 050** |
+| CUDA total (incl. transfers) | 19 591    | 19 611    | 21 028    |
+| CUDA-pinned total            | 9 836     | 9 858     | 9 864     |
 
 Serial C++ matches Fortran within measurement noise.  OpenMP achieves a
-**~8–11× speedup** depending on the kernel.  The CUDA kernel is **~40–60×
-faster** than serial Fortran, but host↔device data transfers account for ~91%
-of the total CUDA wall-clock time (memory operations including allocation take
-~96%), reducing the observable end-to-end speedup to **~2×**.  The memory
-framework described below is a response to this bottleneck.
+**~8–11× speedup** depending on the kernel, while the handwritten OpenACC
+variant reaches roughly **~2.5–3.4×** over serial Fortran. The CUDA kernel
+itself remains **~40–60× faster** than serial Fortran, but end-to-end runtime
+is still dominated by allocation and host/device transfers. Enabling pinned
+host memory cuts total CUDA wall-clock time by about half and raises transfer
+bandwidth from roughly **33/26 GB/s** (H→D/D→H) to about **76/57 GB/s**,
+improving observed end-to-end speedup to roughly **~4.6–6.3×** over serial
+Fortran.
 
 ![Benchmark results — 512×512×512 grid](benchmarks/graphs/figs/grid_512x512x512_niter100.png)
 

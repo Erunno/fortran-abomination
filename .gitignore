@@ -1,5 +1,6 @@
 **/__pycache__/**
 **/bin
+**/__hot_bin
 *.mod
 *.o
 *.out
