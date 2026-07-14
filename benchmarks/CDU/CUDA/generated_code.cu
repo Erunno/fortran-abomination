@@ -2,21 +2,29 @@
 #include <cstddef>
 #include <iostream>
 
+#ifdef USE_PINNED_MEMORY
+#include <unordered_set>
+#endif
+
 #define MEASURE_CUDA_EXECUTION_TIME
 #include "common_functions.cuh"
 
 using namespace generated_kernels::indexing;
 using namespace generated_kernels::timing;
 
+#ifdef USE_PINNED_MEMORY
+std::unordered_set<void*> pinned_ptrs;
+#endif
+
 namespace generated_kernels {
 
 __global__ 
 void kernel_group_1_device(
-    int uny,
-    double* __restrict__ u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
     int unz,
     int unx,
     double zero,
+    double* __restrict__ u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+    int uny,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -65,16 +73,16 @@ void kernel_group_1_device(
 
 __global__ 
 void kernel_group_3_device(
-    int uny,
-    double ay,
-    double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     int unz,
     double az,
+    double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     double ax,
     int unx,
     double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
     double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
     double* __restrict__ u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+    double ay,
+    int uny,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -123,16 +131,16 @@ void kernel_group_3_device(
 
 __global__ 
 void kernel_group_5_device(
-    int uny,
-    double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     double az,
     int unz,
     double ax,
+    double* __restrict__ w, size_t w_dim1, size_t w_dim2, size_t w_dim3,
     int unx,
     double* __restrict__ v, size_t v_dim1, size_t v_dim2, size_t v_dim3,
     double* __restrict__ u, size_t u_dim1, size_t u_dim2, size_t u_dim3,
     double ay,
     double* __restrict__ u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+    int uny,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -185,11 +193,11 @@ void kernel_group_5_device(
 
 __global__ 
 void kernel_group_6_device(
-    int uny,
     double half,
     int unz,
     int unx,
     double* __restrict__ u2, size_t u2_dim1, size_t u2_dim2, size_t u2_dim3,
+    int uny,
     int k_from, int k_to,
     int j_from, int j_to,
     int i_from, int i_to,
@@ -236,7 +244,6 @@ void kernel_group_6_device(
     
 }
 
-bool pinned = false;
 
 // The wrapper function called by Fortran
 extern "C" {
@@ -260,15 +267,26 @@ extern "C" {
         double dymin,
         double dzmin
     ) {
+        #ifdef USE_PINNED_MEMORY
 
-        if (!pinned) {
-            cudaHostRegister(u, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaHostRegisterPortable);
-            cudaHostRegister(u2, (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3), cudaHostRegisterPortable);
-            cudaHostRegister(v, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaHostRegisterPortable);
-            cudaHostRegister(w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaHostRegisterPortable);
-            
-            pinned = true;
+        if (pinned_ptrs.find(w) == pinned_ptrs.end()) {
+            CUCH(cudaHostRegister(w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaHostRegisterPortable));
+            pinned_ptrs.insert(w);
         }
+        if (pinned_ptrs.find(u2) == pinned_ptrs.end()) {
+            CUCH(cudaHostRegister(u2, (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3), cudaHostRegisterPortable));
+            pinned_ptrs.insert(u2);
+        }
+        if (pinned_ptrs.find(u) == pinned_ptrs.end()) {
+            CUCH(cudaHostRegister(u, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaHostRegisterPortable));
+            pinned_ptrs.insert(u);
+        }
+        if (pinned_ptrs.find(v) == pinned_ptrs.end()) {
+            CUCH(cudaHostRegister(v, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaHostRegisterPortable));
+            pinned_ptrs.insert(v);
+        }
+
+        #endif // USE_PINNED_MEMORY
 
         // 1. Allocate memory on the GPU (Device)
         double* w_device;
@@ -288,16 +306,15 @@ extern "C" {
         // 2. Copy inputs from Host (CPU) to Device (GPU)
         measure_h2d(total_h2d_bytes, [&]() {
         CUCH(cudaMemcpy(w_device, w, (sizeof(double) * w_dim1 * w_dim2 * w_dim3), cudaMemcpyHostToDevice));
-        CUCH(cudaMemcpy(u2_device, u2, (sizeof(double) * u2_dim1 * u2_dim2 * u2_dim3), cudaMemcpyHostToDevice));
         CUCH(cudaMemcpy(u_device, u, (sizeof(double) * u_dim1 * u_dim2 * u_dim3), cudaMemcpyHostToDevice));
         CUCH(cudaMemcpy(v_device, v, (sizeof(double) * v_dim1 * v_dim2 * v_dim3), cudaMemcpyHostToDevice));
         });
 
         // Declare local variables
-        double half;
         double ax;
         double zero;
         double ay;
+        double half;
         double az;
 
         // 3. Launch the CUDA Kernels
@@ -324,11 +341,11 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_1_device<<<blocksPerGrid, threadsPerBlock>>>(
-                uny,
-                u2_device, u2_dim1, u2_dim2, u2_dim3,
                 unz,
                 unx,
                 zero,
+                u2_device, u2_dim1, u2_dim2, u2_dim3,
+                uny,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -360,16 +377,16 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_3_device<<<blocksPerGrid, threadsPerBlock>>>(
-                uny,
-                ay,
-                w_device, w_dim1, w_dim2, w_dim3,
                 unz,
                 az,
+                w_device, w_dim1, w_dim2, w_dim3,
                 ax,
                 unx,
                 v_device, v_dim1, v_dim2, v_dim3,
                 u_device, u_dim1, u_dim2, u_dim3,
                 u2_device, u2_dim1, u2_dim2, u2_dim3,
+                ay,
+                uny,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -401,16 +418,16 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_5_device<<<blocksPerGrid, threadsPerBlock>>>(
-                uny,
-                w_device, w_dim1, w_dim2, w_dim3,
                 az,
                 unz,
                 ax,
+                w_device, w_dim1, w_dim2, w_dim3,
                 unx,
                 v_device, v_dim1, v_dim2, v_dim3,
                 u_device, u_dim1, u_dim2, u_dim3,
                 ay,
                 u2_device, u2_dim1, u2_dim2, u2_dim3,
+                uny,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,
@@ -439,11 +456,11 @@ extern "C" {
         
             // 4. Launch the CUDA kernel
             kernel_group_6_device<<<blocksPerGrid, threadsPerBlock>>>(
-                uny,
                 half,
                 unz,
                 unx,
                 u2_device, u2_dim1, u2_dim2, u2_dim3,
+                uny,
                 k_from, k_to,
                 j_from, j_to,
                 i_from, i_to,

@@ -6,9 +6,12 @@ import sys
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 FUNCTIONS    = ['CDW', 'CDU', 'CDV']
-VARIANTS      = ['Fortran', 'Fortran-OMP', 'Fortran-ACC', 'CUDA', 'CPP', 'CPP-OMP']
-GRIDS        = [[512, 512, 512]]
-ITERS        = [100]
+# VARIANTS      = ['CUDA', 'CUDA-pinned', 'Fortran-ACC']
+# GRIDS        = [[512, 512, 512]]
+# ITERS        = [100]
+VARIANTS      = ['Fortran', 'Fortran-OMP', 'Fortran-ACC', 'CUDA', 'CUDA-pinned','CPP', 'CPP-OMP']
+GRIDS        = [[64, 64, 64]]
+ITERS        = [20]
 WARMUP_ITERS = 10   # in-kernel warm-up iterations passed to the binary
 WARMUP_ROUNDS = 2   # full-program rounds whose timing is discarded
 ROUNDS        = 5   # full-program rounds whose timing is collected
@@ -46,6 +49,7 @@ def fmt(values: list[float]) -> str:
 def binary_path(case: str, variant: str,
                 nx: int, ny: int, nz: int,
                 niter: int, nwarmup: int) -> str:
+    # Matches the exact BUILD_ID pattern from the Makefile
     build_id = f'{case}_{variant}_NX{nx}_NY{ny}_NZ{nz}_NITER{niter}_NWARMUP{nwarmup}'
     return os.path.join(BENCHMARKS_DIR, 'bin', build_id, 'benchmark')
 
@@ -76,12 +80,19 @@ def build(case: str, variant: str,
     if os.path.exists(path) and not _sources_newer_than(case, variant, path):
         return path
 
-    log(f'  building {case}/{variant} {nx}x{ny}x{nz} niter={niter} nwarmup={nwarmup} ...')
-    result = subprocess.run(
-        ['make',
+    log(f'   building {case}/{variant} {nx}x{ny}x{nz} niter={niter} nwarmup={nwarmup} ...')
+    
+    # Pass the variant straight through (e.g. VARIANT=CUDA-pinned)
+    command = ['make',
          f'CASE={case}', f'VARIANT={variant}',
          f'NX={nx}', f'NY={ny}', f'NZ={nz}',
-         f'NITER={niter}', f'NWARMUP={nwarmup}'],
+         f'NITER={niter}', f'NWARMUP={nwarmup}']
+
+    if variant == 'CUDA-pinned':
+        command.append('USE_PINNED_MEMORY=1')
+
+    result = subprocess.run(
+        command,
         cwd=BENCHMARKS_DIR,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
@@ -149,7 +160,7 @@ def run_combination(case, variant, nx, ny, nz, niter) -> str:
         case, variant, ROUNDS, nx, ny, nz, niter, WARMUP_ITERS, WARMUP_ROUNDS,
     ])
 
-    if variant == 'CUDA':
+    if variant == 'CUDA' or variant == 'CUDA-pinned':
         data = [parse_cuda(o) for o in outputs]
         def col(key):
             return fmt([d[key] for d in data])

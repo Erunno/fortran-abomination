@@ -2,11 +2,19 @@
 #include <cstddef>
 #include <iostream>
 
+#ifdef USE_PINNED_MEMORY
+#include <unordered_set>
+#endif
+
 #define MEASURE_CUDA_EXECUTION_TIME
 #include "common_functions.cuh"
 
 using namespace generated_kernels::indexing;
 using namespace generated_kernels::timing;
+
+#ifdef USE_PINNED_MEMORY
+std::unordered_set<void*> pinned_ptrs;
+#endif
 
 namespace generated_kernels {
 
@@ -25,6 +33,12 @@ extern "C" {
     void cpp_$KERNEL_NAME$(
         $HOST_PARAMETERS$
     ) {
+        #ifdef USE_PINNED_MEMORY
+
+        $PINNING_OF_HOST_BUFFERS$
+
+        #endif // USE_PINNED_MEMORY
+
         // 1. Allocate memory on the GPU (Device)
         $DEVICE_BUFF_DECLS$
 

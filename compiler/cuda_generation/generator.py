@@ -37,6 +37,9 @@ class FullCodeGenerator:
         host_params = self.host_params_generator.generate_host_params()
         cu_file_template.replace_placeholder("HOST_PARAMETERS", host_params, tabs=in_cpp_func_tabs)
 
+        pinning_of_host_buffers = self.cuda_mem_code_generator.generate_pinning_of_host_buffers()
+        cu_file_template.replace_placeholder("PINNING_OF_HOST_BUFFERS", pinning_of_host_buffers, tabs=in_cpp_func_tabs)
+
         device_buff_decls, cuda_allocation = self.cuda_mem_code_generator.generate_cuda_alloc_code()
         cu_file_template.replace_placeholder("DEVICE_BUFF_DECLS", device_buff_decls, tabs=in_cpp_func_tabs)
         cu_file_template.replace_placeholder("MEMORY_ALLOCATIONS", cuda_allocation, tabs=in_cpp_func_tabs)

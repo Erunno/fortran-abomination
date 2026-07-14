@@ -19,7 +19,7 @@ else ifeq ($(VARIANT),Fortran-OMP)
   VARIANT_LDFLAGS  = -fopenmp
   VARIANT_CXXFLAGS =
 
-else ifeq ($(VARIANT),CUDA)
+else ifneq ($(filter $(VARIANT),CUDA CUDA-pinned),)
   VARIANT_FFLAGS   =
   VARIANT_LDFLAGS  = -L$(CUDA_HOME)/lib64 -lcudart -lstdc++
   VARIANT_CXXFLAGS =

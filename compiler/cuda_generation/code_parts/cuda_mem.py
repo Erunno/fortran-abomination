@@ -46,7 +46,7 @@ class CudaMemCodeGenerator:
 
             return f"CUCH(cudaMemcpy({array_name_device}, {array_name_host}, {total_bytes_expr}, cudaMemcpyHostToDevice));"
 
-        return '\n'.join([generate_cuda_h2d_copy_for(v) for v in self.all_used_arrays])
+        return '\n'.join([generate_cuda_h2d_copy_for(v) for v in self.all_used_arrays if v.is_input()])
     
     def generate_cuda_device_to_host_copy_code(self) -> str:
         def generate_cuda_d2h_copy_for(var: Variable) -> str:
@@ -92,3 +92,13 @@ class CudaMemCodeGenerator:
         total_size_expr = " * ".join(sizes_vars)
         total_bytes_expr = f'({self.typer.size_of(var.type().get_underlying_type())} * {total_size_expr})'
         return total_bytes_expr
+    
+    def generate_pinning_of_host_buffers(self) -> str:
+        def generate_pinning_for(var: Variable) -> str:
+            array_name_host = self.var_namer.format_name(var)
+            return f"if (pinned_ptrs.find({array_name_host}) == pinned_ptrs.end()) {{\n" \
+                   f"    CUCH(cudaHostRegister({array_name_host}, {self._get_total_byte_count_of(var)}, cudaHostRegisterPortable));\n" \
+                   f"    pinned_ptrs.insert({array_name_host});\n" \
+                   f"}}"
+
+        return '\n'.join([generate_pinning_for(v) for v in self.all_used_arrays])

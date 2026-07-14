@@ -29,18 +29,26 @@ CASE    ?= CDV
 VARIANT ?= Fortran
 
 include common/defaults.mk
-
-# Each CASE/ directory contains a tiny case.mk that sets:
-#   CASE_SRC        — the Fortran source filename  (e.g. CDV.f90)
-#   CASE_CUDA_EXTRA — extra .cu files for CUDA variant (optional)
-#   CASE_CPP_EXTRA  — extra .cpp files for CPP / CPP-OMP variant (optional)
 include $(CASE)/case.mk
+
+# Inject the macro definition if requested
+ifeq ($(USE_PINNED_MEMORY),1)
+  NVCCFLAGS  += -DUSE_PINNED_MEMORY
+  CXXFLAGS   += -DUSE_PINNED_MEMORY
+endif
 
 include common/variants.mk
 
 # ---- Derived variables -------------------------------------
 DEFINES      = -DVAR_NX=$(NX) -DVAR_NY=$(NY) -DVAR_NZ=$(NZ) \
                -DVAR_NITER=$(NITER) -DVAR_NWARMUP=$(NWARMUP)
+
+# If the script passes USE_PINNED_MEMORY=1, inject the compiler flag
+ifeq ($(USE_PINNED_MEMORY),1)
+  NVCCFLAGS  += -DUSE_PINNED_MEMORY
+  CXXFLAGS   += -DUSE_PINNED_MEMORY
+endif
+
 ALL_FFLAGS   = $(FFLAGS) $(EXTRA_FFLAGS) $(VARIANT_FFLAGS) -cpp
 ALL_CXXFLAGS = $(CXXFLAGS) $(EXTRA_CXXFLAGS) $(VARIANT_CXXFLAGS)
 
@@ -59,10 +67,19 @@ MAIN_OBJ    = $(BINDIR)/main.o
 
 ifeq ($(VARIANT),CUDA)
   ALL_OBJS = $(CASE_OBJ) $(CUDA_OBJS)
+else ifeq ($(VARIANT),CUDA-pinned)
+  ALL_OBJS = $(CASE_OBJ) $(CUDA_OBJS)
 else ifneq ($(filter $(VARIANT),CPP CPP-OMP),)
   ALL_OBJS = $(CASE_OBJ) $(CPP_OBJS)
 else
   ALL_OBJS = $(CASE_OBJ)
+endif
+
+# ---- Source directory mapping -------------------------------
+# If VARIANT is CUDA-pinned, look for sources in the CUDA directory
+SRC_VARIANT = $(VARIANT)
+ifeq ($(VARIANT),CUDA-pinned)
+  SRC_VARIANT = CUDA
 endif
 
 # ---- Targets -----------------------------------------------
@@ -73,18 +90,16 @@ all: $(BENCH)
 $(BINDIR):
 	mkdir -p $@
 
-# Compile the variant's Fortran source (CDV.f90, cdu.f90, …)
-$(CASE_OBJ): $(CASE)/$(VARIANT)/$(CASE_SRC) | $(BINDIR)
+# Compile the variant's Fortran source (using SRC_VARIANT)
+$(CASE_OBJ): $(CASE)/$(SRC_VARIANT)/$(CASE_SRC) | $(BINDIR)
 	$(FC) $(ALL_FFLAGS) $(DEFINES) $(FC_MODULE_FLAG) $(BINDIR) -I$(BINDIR) -c $< -o $@
 
-# Compile any extra CUDA sources (.cu files listed in CASE_CUDA_EXTRA)
-# -I$(CURDIR)/common makes the shared common_functions.cuh visible to all cases
-$(BINDIR)/%.o: $(CASE)/$(VARIANT)/%.cu | $(BINDIR)
+# Compile any extra CUDA sources (using SRC_VARIANT)
+$(BINDIR)/%.o: $(CASE)/$(SRC_VARIANT)/%.cu | $(BINDIR)
 	$(NVCC) $(NVCCFLAGS) -I$(CURDIR)/common -c $< -o $@
 
-# Compile any extra C++ sources (.cpp files listed in CASE_CPP_EXTRA)
-# -I$(CURDIR)/common makes the shared common_functions.cuh visible to all cases
-$(BINDIR)/%.o: $(CASE)/$(VARIANT)/%.cpp | $(BINDIR)
+# Compile any extra C++ sources (using SRC_VARIANT)
+$(BINDIR)/%.o: $(CASE)/$(SRC_VARIANT)/%.cpp | $(BINDIR)
 	$(CXX) $(ALL_CXXFLAGS) -I$(CURDIR)/common -c $< -o $@
 
 # Compile the benchmark driver (main.f90 in the CASE directory)
